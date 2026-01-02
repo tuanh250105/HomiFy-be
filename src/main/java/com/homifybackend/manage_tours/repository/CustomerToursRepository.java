@@ -19,29 +19,30 @@ public class CustomerToursRepository {
 
     public List<CustomerTourItemDTO> findToursByCustomerId(long customerId) {
         String sql = """
-            SELECT
-              tr.id,
-              tr.sale_listing_id,
-              tr.requested_date,
-              tr.time_slot,
-              tr.status,
-              sl.agent_id,
-              u.full_name AS agent_name,
-              (addr.street || ', ' || addr.city) AS address_text
-            FROM tour_requests tr
-            JOIN sale_listings sl ON sl.id = tr.sale_listing_id
-            JOIN users u ON u.user_id = sl.agent_id
-            JOIN properties p ON p.property_id = sl.property_id
-            JOIN addresses addr ON addr.address_id = p.address_id
-            WHERE tr.requester_id = ?
-            ORDER BY tr.requested_date DESC NULLS LAST, tr.id DESC
+        SELECT
+          tr.id,
+          tr.sale_listing_id,
+          tr.requested_date,
+          tr.time_slot,
+          tr.status,
+          sl.agent_id,
+          u.full_name AS agent_name,
+          (addr.street || ', ' || addr.city) AS address_text
+        FROM tour_requests tr
+        JOIN sale_listings sl ON sl.id = tr.sale_listing_id
+        JOIN agents a ON a.user_id = sl.agent_id
+        JOIN users u ON u.user_id = a.user_id
+        JOIN properties p ON p.property_id = sl.property_id
+        JOIN addresses addr ON addr.address_id = p.address_id
+        WHERE tr.requester_id = ?
+        ORDER BY tr.requested_date DESC NULLS LAST, tr.id DESC
         """;
 
         return jdbc.query(sql, (rs, i) -> {
             Long id = rs.getLong("id");
             Long saleListingId = rs.getLong("sale_listing_id");
 
-            Date d = rs.getDate("requested_date");
+            java.sql.Date d = rs.getDate("requested_date");
             LocalDate requestedDate = (d != null) ? d.toLocalDate() : null;
 
             String timeSlot = rs.getString("time_slot");
@@ -51,7 +52,8 @@ public class CustomerToursRepository {
             String addressText = rs.getString("address_text");
 
             return new CustomerTourItemDTO(
-                    id, saleListingId, requestedDate, timeSlot, status, agentId, agentName, addressText
+                    id, saleListingId, requestedDate, timeSlot, status,
+                    agentId, agentName, addressText
             );
         }, customerId);
     }

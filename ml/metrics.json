@@ -1,0 +1,20 @@
+{
+  "model": "hgb",
+  "use_scaler": true,
+  "data": "mock_property_data.csv",
+  "n_rows": 30000,
+  "train_size": 24000,
+  "test_size": 6000,
+  "train_metrics": {
+    "MAE": 81410.46452152,
+    "RMSE": 108649.46776935752,
+    "R2": 0.9427283623676698
+  },
+  "test_metrics": {
+    "MAE": 95141.15216778974,
+    "RMSE": 131759.40027223574,
+    "R2": 0.9135346217606525
+  },
+  "trained_at": "2026-01-02T02:37:46",
+  "features_count": 52
+}

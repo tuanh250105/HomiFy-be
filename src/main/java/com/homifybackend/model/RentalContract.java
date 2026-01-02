@@ -1,15 +1,10 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "rental_contracts")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class RentalContract {
 
   @Id
@@ -44,4 +39,99 @@ public class RentalContract {
 
   @Column(name = "payment_due_day")
   private Integer paymentDueDay;
+
+  // Constructor rỗng (bắt buộc cho JPA)
+  public RentalContract() {
+  }
+
+  // ================== GETTERS AND SETTERS THỦ CÔNG ==================
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public RentalListing getRentalListing() {
+    return rentalListing;
+  }
+
+  public void setRentalListing(RentalListing rentalListing) {
+    this.rentalListing = rentalListing;
+  }
+
+  public Customer getTenant() {
+    return tenant;
+  }
+
+  public void setTenant(Customer tenant) {
+    this.tenant = tenant;
+  }
+
+  public Double getMonthlyRent() {
+    return monthlyRent;
+  }
+
+  public void setMonthlyRent(Double monthlyRent) {
+    this.monthlyRent = monthlyRent;
+  }
+
+  public Double getDepositPaid() {
+    return depositPaid;
+  }
+
+  public void setDepositPaid(Double depositPaid) {
+    this.depositPaid = depositPaid;
+  }
+
+  public LocalDate getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(LocalDate startDate) {
+    this.startDate = startDate;
+  }
+
+  public LocalDate getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(LocalDate endDate) {
+    this.endDate = endDate;
+  }
+
+  public LocalDate getSignedDate() {
+    return signedDate;
+  }
+
+  public void setSignedDate(LocalDate signedDate) {
+    this.signedDate = signedDate;
+  }
+
+  public String getContractStatus() {
+    return contractStatus;
+  }
+
+  public void setContractStatus(String contractStatus) {
+    this.contractStatus = contractStatus;
+  }
+
+  public Integer getPaymentDueDay() {
+    return paymentDueDay;
+  }
+
+  public void setPaymentDueDay(Integer paymentDueDay) {
+    this.paymentDueDay = paymentDueDay;
+  }
+
+  // Thêm getter cho tenantId và rentalListingId (dùng trong mapper)
+  public Long getTenantId() {
+    return tenant != null ? tenant.getUserId() : null; // giả sử Customer có getUserId()
+  }
+
+  public Long getRentalListingId() {
+    return rentalListing != null ? rentalListing.getId() : null;
+  }
 }

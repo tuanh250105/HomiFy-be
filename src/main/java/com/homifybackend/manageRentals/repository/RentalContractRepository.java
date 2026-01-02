@@ -8,5 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface RentalContractRepository extends JpaRepository<RentalContract, Long> {
-  Optional<RentalContract> findByRentalListingId(Long rentalListingId);
+  Optional<RentalContract> findByRentalListing_Id(Long rentalListingId);
 }

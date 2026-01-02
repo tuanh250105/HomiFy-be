@@ -49,7 +49,7 @@ public class RentalPropertyMapper {
 
       // Chỉ khi RENTED mới query thêm contract + tenant
       if ("RENTED".equals(rl.getListingStatus())) {
-        rentalContractRepository.findByRentalListingId(rl.getId())
+        rentalContractRepository.findByRentalListing_Id(rl.getId())
             .ifPresent(contract -> {
               dto.setRentalContract(mapRentalContract(contract));
               if (contract.getTenant() != null) {

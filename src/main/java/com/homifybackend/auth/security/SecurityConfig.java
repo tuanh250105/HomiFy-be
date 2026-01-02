@@ -32,6 +32,9 @@ public class SecurityConfig {
     private JwtFilter jwtFilter;
 
     @Autowired
+    private CrossOriginOpenerPolicyFilter crossOriginOpenerPolicyFilter;
+
+    @Autowired
     private UserDetailsService userDetailsService;
 
     @Value("${cors.allowed-origins}")
@@ -51,6 +54,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(crossOriginOpenerPolicyFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

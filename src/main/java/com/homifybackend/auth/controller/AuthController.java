@@ -1,15 +1,31 @@
 package com.homifybackend.auth.controller;
 
-import com.homifybackend.auth.dto.*;
-import com.homifybackend.auth.service.AuthService;
-import com.homifybackend.auth.service.GoogleOAuthService;
-import com.homifybackend.auth.security.JwtService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.homifybackend.auth.dto.ChooseRoleRequest;
+import com.homifybackend.auth.dto.ErrorResponse;
+import com.homifybackend.auth.dto.ForgotPasswordRequest;
+import com.homifybackend.auth.dto.GoogleAuthRequest;
+import com.homifybackend.auth.dto.LoginRequest;
+import com.homifybackend.auth.dto.MessageResponse;
+import com.homifybackend.auth.dto.RefreshTokenRequest;
+import com.homifybackend.auth.dto.RegisterRequest;
+import com.homifybackend.auth.dto.ResetPasswordRequest;
+import com.homifybackend.auth.dto.UserResponse;
+import com.homifybackend.auth.dto.VerifyOtpRequest;
+import com.homifybackend.auth.security.JwtService;
+import com.homifybackend.auth.service.AuthService;
+import com.homifybackend.auth.service.GoogleOAuthService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -98,14 +114,45 @@ public class AuthController {
     @PostMapping("/google")
     public ResponseEntity<?> googleAuth(@Valid @RequestBody GoogleAuthRequest googleAuthRequest) {
         try {
+            if (googleAuthRequest.getIdToken() == null || googleAuthRequest.getIdToken().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("ID token is required"));
+            }
+            
             UserResponse response = googleOAuthService.authenticateGoogleUser(googleAuthRequest.getIdToken());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            // Log the error for debugging
+            System.err.println("=== Google Auth Error ===");
+            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getName());
+            if (e.getCause() != null) {
+                System.err.println("Cause: " + e.getCause().getMessage());
+            }
+            e.printStackTrace();
+            
+            // Check if it's a configuration error (should be 500) vs authentication error (401)
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && errorMessage.contains("not properly configured")) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ErrorResponse(errorMessage));
+            }
+            
+            // Return more detailed error message for debugging
+            String detailedMessage = errorMessage != null ? errorMessage : "Google authentication failed";
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse(e.getMessage()));
+                    .body(new ErrorResponse(detailedMessage));
         } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("=== Google Auth Exception ===");
+            System.err.println("Exception: " + e.getMessage());
+            System.err.println("Exception class: " + e.getClass().getName());
+            if (e.getCause() != null) {
+                System.err.println("Cause: " + e.getCause().getMessage());
+            }
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("An error occurred: " + e.getMessage()));
+                    .body(new ErrorResponse("An error occurred during Google authentication: " + e.getMessage()));
         }
     }
 
@@ -136,6 +183,23 @@ public class AuthController {
                     .body(new ErrorResponse(e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("An error occurred: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        try {
+            UserResponse response = authService.refreshToken(refreshTokenRequest.getRefreshToken());
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

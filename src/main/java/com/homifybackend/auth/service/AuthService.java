@@ -135,13 +135,11 @@ public class AuthService {
         // Create role-specific record
         if ("customer".equals(role)) {
             Customer customer = Customer.builder()
-                    .userId(user.getUserId())
                     .user(user)
                     .build();
             customerRepository.save(customer);
         } else if ("agent".equals(role)) {
             Agent agent = Agent.builder()
-                    .userId(user.getUserId())
                     .user(user)
                     .build();
             agentRepository.save(agent);
@@ -249,7 +247,6 @@ public class AuthService {
         if ("customer".equals(newRole)) {
             if (!customerRepository.existsById(user.getUserId())) {
                 Customer customer = Customer.builder()
-                        .userId(user.getUserId())
                         .user(user)
                         .build();
                 customerRepository.save(customer);
@@ -257,7 +254,6 @@ public class AuthService {
         } else if ("agent".equals(newRole)) {
             if (!agentRepository.existsById(user.getUserId())) {
                 Agent agent = Agent.builder()
-                        .userId(user.getUserId())
                         .user(user)
                         .build();
                 agentRepository.save(agent);
@@ -278,6 +274,45 @@ public class AuthService {
                 .role(user.getRole())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .build();
+    }
+
+    public UserResponse refreshToken(String refreshToken) {
+        // Validate refresh token
+        if (!jwtService.validateToken(refreshToken)) {
+            throw new BadCredentialsException("Invalid or expired refresh token");
+        }
+
+        // Extract username from refresh token
+        String username = jwtService.extractUsername(refreshToken);
+        if (username == null) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+
+        // Load user details
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+        // Find account
+        Account account = accountRepository.findByEmail(username)
+                .or(() -> accountRepository.findByUsername(username))
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        User user = account.getUser();
+
+        // Generate new tokens (use default expiration, not remember me)
+        String newAccessToken = jwtService.generateToken(userDetails);
+        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+
+        // Build response
+        return UserResponse.builder()
+                .id(user.getUserId())
+                .email(account.getEmail())
+                .username(account.getUsername())
+                .fullName(user.getFullName())
+                .phone(user.getPhoneNumber())
+                .role(user.getRole())
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .build();
     }
 }

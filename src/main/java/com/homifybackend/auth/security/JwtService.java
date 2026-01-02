@@ -1,21 +1,26 @@
 package com.homifybackend.auth.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+
 @Service
 public class JwtService {
+
+    private static final int MIN_SECRET_KEY_LENGTH = 32; // 256 bits = 32 bytes (required for HS256)
 
     @Value("${app.jwt.secret}")
     private String secret;
@@ -28,6 +33,31 @@ public class JwtService {
 
     @Value("${app.jwt.remember-me-expiration:2592000000}")
     private Long rememberMeExpiration; // Default: 30 days in milliseconds
+
+    /**
+     * Validates JWT secret key on service initialization.
+     * HS256 algorithm requires secret key to be at least 256 bits (32 bytes).
+     * 
+     * @throws IllegalStateException if secret key is too short
+     */
+    @PostConstruct
+    public void validateSecretKey() {
+        if (secret == null || secret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT secret key is not configured. Please set app.jwt.secret in your configuration.");
+        }
+        
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_KEY_LENGTH) {
+            throw new IllegalStateException(
+                String.format(
+                    "JWT secret key is too short. HS256 requires at least %d bytes (256 bits), but current key is only %d bytes. " +
+                    "Please update your JWT_SECRET environment variable with a longer key (at least 32 characters).",
+                    MIN_SECRET_KEY_LENGTH,
+                    secretBytes.length
+                )
+            );
+        }
+    }
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

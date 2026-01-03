@@ -178,8 +178,8 @@ public class GoogleOAuthService {
         String name = (String) payload.get("name");
         String sub = payload.getSubject(); // Google user ID
 
-        // Check if account exists
-        Account account = accountRepository.findByEmail(email).orElse(null);
+        // Check if account exists with User fetched (JOIN FETCH to avoid LazyInitializationException)
+        Account account = accountRepository.findByEmailWithUser(email).orElse(null);
 
         if (account == null) {
             // Create new user

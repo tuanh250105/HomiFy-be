@@ -1,16 +1,18 @@
 package com.homifybackend.auth.service;
 
-import com.homifybackend.auth.model.Otp;
-import com.homifybackend.auth.repository.OtpRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.homifybackend.auth.model.Otp;
+import com.homifybackend.auth.repository.OtpRepository;
 
 @Service
 public class OtpService {
@@ -38,7 +40,7 @@ public class OtpService {
         return otp.toString();
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Otp createAndSendOtp(String email, String otpType) {
         // Mark old OTPs as used
         otpRepository.markAllAsUsedByEmailAndType(email, otpType);
@@ -59,7 +61,28 @@ public class OtpService {
         Otp savedOtp = otpRepository.save(otp);
 
         // Send OTP via email
-        emailService.sendOtpEmail(email, otpCode, otpType);
+        System.out.println("=== Sending OTP email ===");
+        System.out.println("Email: " + email);
+        System.out.println("OTP Code: " + otpCode);
+        System.out.println("OTP Type: " + otpType);
+        
+        try {
+            emailService.sendOtpEmail(email, otpCode, otpType);
+            System.out.println("=== OTP email sent successfully ===");
+        } catch (Exception e) {
+            // Log email error in detail
+            System.err.println("=== CRITICAL: Failed to send OTP email ===");
+            System.err.println("Email: " + email);
+            System.err.println("OTP Code: " + otpCode);
+            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getName());
+            if (e.getCause() != null) {
+                System.err.println("Cause: " + e.getCause().getMessage());
+            }
+            e.printStackTrace();
+            // Re-throw to let caller know email failed
+            throw new RuntimeException("Failed to send OTP email to " + email + ": " + e.getMessage(), e);
+        }
 
         return savedOtp;
     }

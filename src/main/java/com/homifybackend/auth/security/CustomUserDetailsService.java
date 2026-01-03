@@ -1,12 +1,13 @@
 package com.homifybackend.auth.security;
 
-import com.homifybackend.auth.model.Account;
-import com.homifybackend.auth.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.homifybackend.auth.model.Account;
+import com.homifybackend.auth.repository.AccountRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -16,10 +17,12 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Account account = accountRepository.findByUsername(username)
-                .or(() -> accountRepository.findByEmail(username))
+        // Use JOIN FETCH to avoid LazyInitializationException
+        Account account = accountRepository.findByUsernameWithUser(username)
+                .or(() -> accountRepository.findByEmailWithUser(username))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        // User is already fetched by JOIN FETCH, so safe to access
         String role = account.getUser() != null && account.getUser().getRole() != null 
                 ? account.getUser().getRole() 
                 : "customer";

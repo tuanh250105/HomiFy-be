@@ -20,6 +20,7 @@ import com.homifybackend.auth.dto.RegisterRequest;
 import com.homifybackend.auth.dto.ResetPasswordRequest;
 import com.homifybackend.auth.dto.UserResponse;
 import com.homifybackend.auth.dto.VerifyOtpRequest;
+import com.homifybackend.auth.repository.AccountRepository;
 import com.homifybackend.auth.security.JwtService;
 import com.homifybackend.auth.service.AuthService;
 import com.homifybackend.auth.service.GoogleOAuthService;
@@ -41,15 +42,29 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private AccountRepository accountRepository;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             UserResponse response = authService.login(loginRequest);
             return ResponseEntity.ok(response);
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            // Check if account exists to provide more helpful error message
+            boolean accountExists = accountRepository.existsByEmail(loginRequest.getEmail()) 
+                    || accountRepository.existsByUsername(loginRequest.getEmail());
+            
+            String errorMessage = accountExists 
+                    ? "Invalid email or password" 
+                    : "Account not found. Please register first or verify your email if you just registered.";
+            
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Invalid email or password"));
+                    .body(new ErrorResponse(errorMessage));
         } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("Login error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred: " + e.getMessage()));
         }
@@ -58,12 +73,47 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
+            // Log the registration attempt for debugging
+            System.out.println("=== Registration Request ===");
+            System.out.println("Email: " + registerRequest.getEmail());
+            System.out.println("Username: " + registerRequest.getUsername());
+            System.out.println("Full Name: " + registerRequest.getFullName());
+            
+            // Validate and store registration data (account not created yet)
             authService.register(registerRequest);
-            return ResponseEntity.ok(new MessageResponse("Registration successful. Please check your email for verification code."));
+            System.out.println("Registration data validated and stored");
+            
+            // Send OTP email for verification
+            // Account will be created only after OTP verification
+            String normalizedEmail = registerRequest.getEmail().trim().toLowerCase();
+            try {
+                authService.sendRegistrationOtp(normalizedEmail);
+                System.out.println("OTP email sent successfully");
+            } catch (Exception emailException) {
+                // If email fails, still return success but warn user
+                System.err.println("=== WARNING: Registration successful but email failed ===");
+                System.err.println("Email error: " + emailException.getMessage());
+                emailException.printStackTrace();
+                
+                // Return success but with a warning message
+                return ResponseEntity.status(HttpStatus.ACCEPTED)
+                        .body(new ErrorResponse("Registration data saved, but failed to send verification email. Please contact support or try again later. Error: " + emailException.getMessage()));
+            }
+            
+            return ResponseEntity.ok(new MessageResponse("Please check your email for verification code to complete registration."));
         } catch (RuntimeException e) {
+            // Log the error for debugging
+            System.err.println("=== Registration Validation Failed ===");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("=== Unexpected Registration Error ===");
+            System.err.println("Error: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getName());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred: " + e.getMessage()));
         }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.hibernate.Hibernate;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,46 +100,63 @@ public class ListingDetailMapper {
     }
 
     private Map<String, Object> extractSubtypeDetails(Property property) {
+        Map<String, Object> details = new HashMap<>();
 
-        Map<String, Object> details = new LinkedHashMap<>();
+        if (property instanceof Apartment apartment) {
 
-        if (property == null) return details;
+            details.put("usableArea", apartment.getUsableArea());
+            details.put("maintenanceFee", apartment.getMaintenanceFee());
+            details.put("level", apartment.getLevel());
+            details.put("hasElevatorAccess", apartment.getHasElevatorAccess());
+            details.put("petAllowed", apartment.getPetAllowed());
+            details.put("sharedFacilities", apartment.getSharedFacilities());
+            details.put("totalBuildingFloors", apartment.getTotalBuildingFloors());
+            details.put("balcony", apartment.getBalcony());
 
-        Class<?> clazz = Hibernate.getClass(property);
+        } else if (property instanceof SingleHouse singleHouse) {
 
-        for (Field field : clazz.getDeclaredFields()) {
+            details.put("landArea", singleHouse.getLandArea());
+            details.put("backyardArea", singleHouse.getBackyardArea());
+            details.put("frontYardArea", singleHouse.getFrontYardArea());
+            details.put("hasGarage", singleHouse.getHasGarage());
+            details.put("hasBasement", singleHouse.getHasBasement());
 
-            // Bỏ qua field static / synthetic
-            if (field.isSynthetic()
-                    || java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                continue;
-            }
+        } else if (property instanceof Villa villa) {
 
-            // Bỏ qua quan hệ JPA (tránh lộ entity + loop)
-            if (field.isAnnotationPresent(OneToMany.class)
-                    || field.isAnnotationPresent(ManyToOne.class)
-                    || field.isAnnotationPresent(OneToOne.class)
-                    || field.isAnnotationPresent(ManyToMany.class)) {
-                continue;
-            }
+            details.put("lotArea", villa.getLotArea());
+            details.put("backyardArea", villa.getBackyardArea());
+            details.put("frontYardArea", villa.getFrontYardArea());
+            details.put("gardenArea", villa.getGardenArea());
+            details.put("parkingSpaces", villa.getParkingSpaces());
+            details.put("hasGarage", villa.getHasGarage());
+            details.put("hasBasement", villa.getHasBasement());
+            details.put("garageArea", villa.getGarageArea());
+            details.put("viewType", villa.getViewType());
+            details.put("smartHomeLevel", villa.getSmartHomeLevel());
+            details.put("serviceArea", villa.getServiceArea());
 
-            // Bỏ qua id
-            if ("propertyId".equals(field.getName())) {
-                continue;
-            }
+        } else if (property instanceof TownHouse townHouse) {
 
-            field.setAccessible(true);
-
-            try {
-                Object value = field.get(property);
-                if (value != null) {
-                    details.put(field.getName(), value);
-                }
-            } catch (IllegalAccessException ignored) {}
+            details.put("landArea", townHouse.getLandArea());
+            details.put("numberOfFloors", townHouse.getNumberOfFloors());
+            details.put("cornerLot", townHouse.getCornerLot());
+            details.put("frontWidth", townHouse.getFrontWidth());
+            details.put("depth", townHouse.getDepth());
+            details.put("carAccessible", townHouse.getCarAccessible());
+            details.put("cctvInstalled", townHouse.getCctvInstalled());
+            details.put("maintenanceFee", townHouse.getMaintenanceFee());
+            details.put("clubhouseAccess", townHouse.getClubhouseAccess());
+            details.put("poolAccess", townHouse.getPoolAccess());
+            details.put("gymAccess", townHouse.getGymAccess());
+            details.put("greenSpace", townHouse.getGreenSpace());
+            details.put("roadWidth", townHouse.getRoadWidth());
         }
 
         return details;
     }
+
+
+
 
     private List<RoomDTO> mapRooms(List<Room> rooms) {
         if (rooms == null || rooms.isEmpty()) return List.of();

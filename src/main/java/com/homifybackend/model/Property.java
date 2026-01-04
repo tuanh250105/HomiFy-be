@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "property_type")
 public class Property {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

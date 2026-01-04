@@ -15,23 +15,23 @@ import java.time.LocalDateTime;
 @IdClass(CustomerFavoriteId.class)
 public class CustomerFavorite {
 
-    @Id
-    @Column(name = "customer_id")
-    private Long customerId;
+  @Id
+  @Column(name = "customer_id")
+  private Long customerId;
 
-    @Id
-    @Column(name = "property_id")
-    private Long propertyId;
+  @Id
+  @Column(name = "property_id")
+  private Long propertyId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", insertable = false, updatable = false)
-    private Customer customer;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "customer_id", insertable = false, updatable = false)
+  private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "property_id", insertable = false, updatable = false)
-    private Property property;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "property_id", insertable = false, updatable = false)
+  private Property property;
 
-    @CreationTimestamp
-    @Column(name = "date_added")
-    private LocalDateTime dateAdded;
+  @CreationTimestamp
+  @Column(name = "date_added")
+  private LocalDateTime dateAdded;
 }

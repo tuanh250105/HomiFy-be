@@ -79,9 +79,9 @@ public class Property {
 
     // 1:1 Rental Listing
     @OneToOne(mappedBy = "property",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY)
+          cascade = CascadeType.ALL,
+          orphanRemoval = true,
+          fetch = FetchType.LAZY)
     private RentalListing rentalListing;
 
     @OneToOne(mappedBy = "property",
@@ -93,8 +93,8 @@ public class Property {
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+    if (createdAt == null) {
+      createdAt = LocalDateTime.now();
+    }
     }
 }

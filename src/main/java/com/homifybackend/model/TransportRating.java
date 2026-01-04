@@ -1,16 +1,25 @@
 package com.homifybackend.model;
+
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "transport_ratings")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransportRating {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "rating_id")
+  private Long ratingId;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "rating_id")
-    private Long id;
+  @Column(name = "walk_score")
+  private Integer walkScore;
 
-    private Integer walkScore;
-    private Integer bikeScore;
-    private Integer transitScore;
+  @Column(name = "bike_score")
+  private Integer bikeScore;
+
+  @Column(name = "transit_score")
+  private Integer transitScore;
 }

@@ -1,12 +1,12 @@
 package com.homifybackend.repository;
 
-import com.homifybackend.model.Property;
-import com.homifybackend.model.SaleListing;
+import com.homifybackend.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 
 public interface SaleListingReposity extends JpaRepository<SaleListing, Long> {
@@ -34,6 +34,7 @@ public interface SaleListingReposity extends JpaRepository<SaleListing, Long> {
             @Param("minPrice") Double minPrice,
             @Param("maxPrice") Double maxPrice,
             @Param("propertyClass") Class<? extends Property> propertyClass,
-            @Param("status") String status
+            @Param("status") SaleListingStatus status
     );
+    Optional<SaleListing> findByProperty_PropertyId(Long propertyId);
 }

@@ -1,23 +1,46 @@
 package com.homifybackend.model;
+
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "villas")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @DiscriminatorValue("VILLA")
-@PrimaryKeyJoinColumn(name = "property_id")
-public class Villa extends Property {
+public class Villa  extends Property{
+  @Column(name = "lot_area")
+  private Double lotArea;
 
-    private Double lotArea;
-    private Double backyardArea;
-    private Double frontYardArea;
-    private Double gardenArea;
+  @Column(name = "backyard_area")
+  private Double backyardArea;
 
-    private Integer parkingSpaces;
-    private Boolean hasGarage;
-    private Boolean hasBasement;
+  @Column(name = "front_yard_area")
+  private Double frontYardArea;
 
-    private Double garageArea;
-    private String viewType;
-    private Integer smartHomeLevel;
-    private Double serviceArea;
+  @Column(name = "garden_area")
+  private Double gardenArea;
+
+  @Column(name = "parking_spaces")
+  private Integer parkingSpaces;
+
+  @Column(name = "has_garage")
+  private Boolean hasGarage = false;
+
+  @Column(name = "has_basement")
+  private Boolean hasBasement = false;
+
+  @Column(name = "garage_area")
+  private Double garageArea;
+
+  @Column(name = "view_type", length = 50)
+  private String viewType;
+
+  @Column(name = "smart_home_level")
+  private Integer smartHomeLevel;
+
+  @Column(name = "service_area")
+  private Double serviceArea;
 }

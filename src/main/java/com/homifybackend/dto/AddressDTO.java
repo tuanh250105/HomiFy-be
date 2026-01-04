@@ -1,19 +1,22 @@
 package com.homifybackend.dto;
-import lombok.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class AddressDTO {
+import com.homifybackend.model.Address;
 
-    private String city;
-    private String province;
-    private String street;
-    private Double latitude;
-    private Double longitude;
-
-
-    // constructor + getter/setter
-
-}
+public record AddressDTO(
+         Long addressId,
+         String city,
+         String province,
+         String street,
+         Double latitude,
+         Double longitude
+)
+    { public AddressDTO(com.homifybackend.model.Address address) {
+        this(
+                address.getAddressId(),
+                address.getCity(),
+                address.getProvince(),
+                address.getStreet(),
+                address.getLatitude(),
+                address.getLongitude()
+        );
+}}

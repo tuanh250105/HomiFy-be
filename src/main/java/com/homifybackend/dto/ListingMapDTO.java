@@ -1,14 +1,13 @@
 package com.homifybackend.dto;
 
-import com.homifybackend.model.Address;
 import lombok.*;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+
 public class ListingMapDTO {
 
     private Long listingId;
@@ -19,9 +18,6 @@ public class ListingMapDTO {
     private String listingType;
 
     private String propertyType;
-    private Address address;
+    private AddressDTO address;
 
-    public ListingMapDTO(Long id, String listingType, BigDecimal currentPrice, String upperCase, AddressDTO addressDTO) {
-
-    }
 }

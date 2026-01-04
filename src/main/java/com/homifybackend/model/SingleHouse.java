@@ -1,17 +1,29 @@
 package com.homifybackend.model;
+
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "single_houses")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @DiscriminatorValue("SINGLE_HOUSE")
-@PrimaryKeyJoinColumn(name = "property_id")
-public class SingleHouse extends Property {
+public class SingleHouse extends Property{
 
-    private Double landArea;
-    private Double backyardArea;
-    private Double frontYardArea;
+  @Column(name = "land_area")
+  private Double landArea;
 
-    private Boolean hasGarage;
-    private Boolean hasBasement;
+  @Column(name = "backyard_area")
+  private Double backyardArea;
+
+  @Column(name = "front_yard_area")
+  private Double frontYardArea;
+
+  @Column(name = "has_garage")
+  private Boolean hasGarage = false;
+
+  @Column(name = "has_basement")
+  private Boolean hasBasement = false;
 }
-

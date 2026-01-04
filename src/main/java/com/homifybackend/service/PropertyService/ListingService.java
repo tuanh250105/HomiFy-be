@@ -12,10 +12,12 @@ import com.homifybackend.repository.RentalListingReposity;
 import com.homifybackend.repository.RoomReposity;
 import com.homifybackend.repository.SaleListingReposity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class ListingService {
     private final PropertyReposity propertyReposity;
     private final RoomReposity roomReposity;
@@ -36,24 +38,28 @@ public class ListingService {
             Double minLat, Double maxLat, Double minLng, Double maxLng, Integer zoom,
             String category, Double minPrice, Double maxPrice, String propertyType, String keyword) {
 
+        String propertyType1 = (propertyType == null || propertyType.isBlank())
+                ? null
+                : propertyType.toUpperCase();
+
         return switch (category.toUpperCase()) {
             case "BUY" -> saleListingReposity.findByMapArea(
                             minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
-                            SaleListingStatus.ACTIVE, propertyType
+                            SaleListingStatus.ACTIVE, propertyType1
                     ).stream()
                     .map(listingMapper::toMapDTO)
                     .toList();
 
             case "SOLD" -> saleListingReposity.findByMapArea(
                             minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
-                            SaleListingStatus.SOLD, propertyType
+                            SaleListingStatus.SOLD, propertyType1
                     ).stream()
                     .map(listingMapper::toMapDTO)
                     .toList();
 
             case "RENT" -> rentalListingReposity.findByMapArea(
                             minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
-                            RentalListingStatus.ACTIVE, propertyType
+                            RentalListingStatus.ACTIVE, propertyType1
                     ).stream()
                     .map(listingMapper::toMapDTO)
                     .toList();
@@ -69,10 +75,7 @@ public class ListingService {
         Property property = propertyReposity.findById(propertyId)
                 .orElseThrow(() -> new RuntimeException("Property not found"));
 
-        // 2️⃣ Rooms
-        List<Room> rooms = roomReposity.findByProperty_PropertyId(propertyId);
 
-        // 3️⃣ Listing theo type
         SaleListing sale = null;
         RentalListing rent = null;
 
@@ -93,8 +96,7 @@ public class ListingService {
                 type,
                 property,
                 sale,
-                rent,
-                rooms
+                rent
         );
     }
 

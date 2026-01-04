@@ -3,9 +3,10 @@ package com.homifybackend.mapper;
 import com.homifybackend.dto.*;
 import com.homifybackend.model.*;
 import jakarta.persistence.*;
-import org.springframework.stereotype.Component;
 
 import org.hibernate.Hibernate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -14,19 +15,20 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Transactional(readOnly = true)
 public class ListingDetailMapper {
 
     public ListingDetailResponse toResponse(
             ListingType type,
             Property property,
             SaleListing sale,
-            RentalListing rent,
-            List<Room> rooms
+            RentalListing rent
     ) {
 
         PropertyCoreDTO core = mapCore(property);
         Map<String, Object> details = extractSubtypeDetails(property);
-        List<RoomDTO> roomDTOs = mapRooms(rooms);
+        List<RoomDTO> roomDTOs = mapRooms(property.getRooms());
+
 
         Object listing = (type == ListingType.BUY)
                 ? mapSale(sale)

@@ -17,7 +17,7 @@ public interface RentalListingReposity extends JpaRepository<RentalListing, Long
           AND r.rentalStatus = :status
           AND (:minRent IS NULL OR r.monthlyRent >= :minPrice)
           AND (:maxRent IS NULL OR r.monthlyRent <= :maxPrice)
-          AND (:propertyType IS NULL OR UPPER(p.propertyType) = UPPER(:propertyType))
+          AND (:propertyType IS NULL OR p.propertyType =:propertyType)
 
     """)
     List<RentalListing> findByMapArea(

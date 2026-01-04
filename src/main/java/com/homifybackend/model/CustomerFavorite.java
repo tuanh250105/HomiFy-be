@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-//@IdClass(CustomerFavoriteId.class)
+@IdClass(CustomerFavoriteId.class)
 public class CustomerFavorite {
 
   @Id

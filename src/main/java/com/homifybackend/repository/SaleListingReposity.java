@@ -20,7 +20,7 @@ public interface SaleListingReposity extends JpaRepository<SaleListing, Long> {
           AND s.saleStatus = 'ACTIVE'
           AND (:minPrice IS NULL OR s.currentPrice >= :minPrice)
           AND (:maxPrice IS NULL OR s.currentPrice <= :maxPrice)
-          AND (:propertyType IS NULL OR UPPER(p.propertyType) = UPPER(:propertyType))
+          AND (:propertyType IS NULL OR p.propertyType =:propertyType)
     """)
     List<SaleListing> findByMapArea(
             @Param("minLat") Double minLat,

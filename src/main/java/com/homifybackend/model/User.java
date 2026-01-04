@@ -1,34 +1,56 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "user_id")
+  private Long userId;
 
-    @Column(name = "full_name")
-    private String fullName;
+  @Column(name = "full_name", length = 100)
+  private String fullName;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
+  @Column(name = "phone_number", length = 20)
+  private String phoneNumber;
 
-    @Column(name = "role")
-    private String role;
+  @Column(name = "registration_date")
+  private LocalDate registrationDate;
 
-    public User() {}
+  @Column(name = "date_of_birth")
+  private LocalDate dateOfBirth;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+  @Column(length = 20)
+  @Enumerated(EnumType.STRING)
+  private Gender gender;
+
+  @Column(name = "avatar_url", columnDefinition = "TEXT")
+  private String avatarUrl;
+
+  @Column(length = 20)
+  @Enumerated(EnumType.STRING)
+  private Role role;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "address_id")
+  private Address address;
+
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Account account;
+
+  @PrePersist
+  protected void onCreate() {
+    if (registrationDate == null) {
+      registrationDate = LocalDate.now();
+    }
+  }
 }

@@ -1,52 +1,40 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "addresses")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "address_id")
-    private Long addressId;
 
-    @Column(name = "zip_code")
-    private String zipCode;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "address_id")
+  private Long addressId;
 
-    @Column(name = "city")
-    private String city;
+  @Column(name = "zip_code", length = 20)
+  private String zipCode;
 
-    @Column(name = "province")
-    private String province;
+  @Column(name = "city", length = 100)
+  private String city;
 
-    @Column(name = "street")
-    private String street;
+  @Column(name = "province", length = 100)
+  private String province;
 
-    @Column(name = "nation")
-    private String nation;
+  @Column(name = "street", length = 255)
+  private String street;
 
-    @Column(name = "latitude")
-    private Double latitude;
+  @Column(name = "nation", length = 100)
+  private String nation;
 
-    @Column(name = "longitude")
-    private Double longitude;
+  @Column(name = "latitude")
+  private Double latitude;
 
-    public Address() {}
-
-    public Long getAddressId() { return addressId; }
-    public void setAddressId(Long addressId) { this.addressId = addressId; }
-    public String getZipCode() { return zipCode; }
-    public void setZipCode(String zipCode) { this.zipCode = zipCode; }
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
-    public String getProvince() { return province; }
-    public void setProvince(String province) { this.province = province; }
-    public String getStreet() { return street; }
-    public void setStreet(String street) { this.street = street; }
-    public String getNation() { return nation; }
-    public void setNation(String nation) { this.nation = nation; }
-    public Double getLatitude() { return latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
-    public Double getLongitude() { return longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+  @Column(name = "longitude")
+  private Double longitude;
 }

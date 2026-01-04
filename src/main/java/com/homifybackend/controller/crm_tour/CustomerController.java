@@ -1,14 +1,14 @@
-package com.homifybackend.controller;
+package com.homifybackend.controller.crm_tour;
 
 import com.homifybackend.model.Customer;
-import com.homifybackend.service.CustomerService;
+import com.homifybackend.service.crm.CustomerService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/crm/customers")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:3000")
 public class CustomerController {
 
     private final CustomerService service;
@@ -25,6 +25,11 @@ public class CustomerController {
     @PutMapping("/{id}")
     public Customer update(@PathVariable Long id, @RequestBody Customer customer) {
         return service.updateCustomer(id, customer);
+    }
+    // Thêm vào CustomerController.java
+    @PutMapping("/{id}/favorite")
+    public Customer toggleFavorite(@PathVariable Long id, @RequestBody Map<String, Boolean> update) {
+        return service.toggleFavorite(id, update);
     }
 
     @PutMapping("/{id}/status")

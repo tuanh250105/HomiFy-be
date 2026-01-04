@@ -9,10 +9,8 @@ public class TourDTO {
     private List<PreferredTimeDTO> preferredTimes;
     private String message;
 
-    // Constructors
     public TourDTO() {}
 
-    // Getters and Setters
     public Long getListingId() { return listingId; }
     public void setListingId(Long listingId) { this.listingId = listingId; }
 

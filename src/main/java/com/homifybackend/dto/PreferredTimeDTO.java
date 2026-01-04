@@ -1,8 +1,8 @@
 package com.homifybackend.dto;
 
 public class PreferredTimeDTO {
-    private String date; // YYYY-MM-DD
-    private String time; // HH:mm AM/PM
+    private String date;
+    private String time;
 
     public PreferredTimeDTO() {}
 

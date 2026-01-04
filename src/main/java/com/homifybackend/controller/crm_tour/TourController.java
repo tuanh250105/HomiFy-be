@@ -1,4 +1,4 @@
-package com.homifybackend.controller;
+package com.homifybackend.controller.crm_tour;
 
 import com.homifybackend.model.Tour;
 import com.homifybackend.repository.TourRepository;

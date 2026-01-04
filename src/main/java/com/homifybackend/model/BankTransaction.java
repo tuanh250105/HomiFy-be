@@ -29,8 +29,9 @@ public class BankTransaction {
   @Column(nullable = false, precision = 18, scale = 2)
   private BigDecimal amount;
 
+  @Enumerated(EnumType.STRING)
   @Column(length = 10)
-  private String direction = "CREDIT";
+  private BankTransactionDirection direction = BankTransactionDirection.CREDIT;
 
   @Column(columnDefinition = "TEXT")
   private String description;

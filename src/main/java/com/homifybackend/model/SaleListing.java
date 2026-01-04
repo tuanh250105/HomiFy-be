@@ -1,43 +1,52 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "sale_listings")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class SaleListing {
 
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "property_id")
-    private Long propertyId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_id", nullable = false)
+    private Agent agent;
 
-    @Column(name = "current_price")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "property_id")
+    private Property property;
+
+    @Column(name = "current_price", precision = 18, scale = 2)
     private BigDecimal currentPrice;
 
-    @Column(name = "sale_status")
-    private String saleStatus;
+    @Column(name = "estimate_value", precision = 18, scale = 2)
+    private BigDecimal estimateValue;
 
+    @Column(name = "sale_status", length = 20)
+    @Enumerated(EnumType.STRING)
+    private SaleListingStatus saleStatus = SaleListingStatus.ACTIVE;
+
+    @Column(name = "marketing_description", columnDefinition = "TEXT")
+    private String marketingDescription;
+
+    @CreationTimestamp
     @Column(name = "date_listed")
     private LocalDateTime dateListed;
 
-    public SaleListing() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public Long getPropertyId() { return propertyId; }
-    public void setPropertyId(Long propertyId) { this.propertyId = propertyId; }
-
-    public BigDecimal getCurrentPrice() { return currentPrice; }
-    public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
-
-    public String getSaleStatus() { return saleStatus; }
-    public void setSaleStatus(String saleStatus) { this.saleStatus = saleStatus; }
-
-    public LocalDateTime getDateListed() { return dateListed; }
-    public void setDateListed(LocalDateTime dateListed) { this.dateListed = dateListed; }
+    @OneToMany(mappedBy = "saleListing", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ListingImage> images = new ArrayList<>();
 }

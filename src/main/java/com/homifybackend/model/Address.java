@@ -1,70 +1,40 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "addresses") // 🔥 QUAN TRỌNG
+@Table(name = "addresses")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Address {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // 🔥 QUAN TRỌNG
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "address_id")
     private Long addressId;
 
-    private String city;
-
-    private String street;
-    private String province;
-    private String nation;
+    @Column(name = "zip_code", length = 20)
     private String zipCode;
 
-    // ===== GETTER / SETTER =====
+    @Column(name = "city", length = 100)
+    private String city;
 
-    public Long getAddressId() {
-        return addressId;
-    }
+    @Column(name = "province", length = 100)
+    private String province;
 
-    public void setAddressId(Long addressId) {
-        this.addressId = addressId;
-    }
+    @Column(name = "street", length = 255)
+    private String street;
 
-    public String getCity() {
-        return city;
-    }
+    @Column(name = "nation", length = 100)
+    private String nation;
 
-    public void setCity(String city) {
-        this.city = city;
-    }
+    @Column(name = "latitude")
+    private Double latitude;
 
-    public String getStreet() {
-        return street;
-    }
-
-    public void setStreet(String street) {
-        this.street = street;
-    }
-
-    public String getProvince() {
-        return province;
-    }
-
-    public void setProvince(String province) {
-        this.province = province;
-    }
-
-    public String getNation() {
-        return nation;
-    }
-
-    public void setNation(String nation) {
-        this.nation = nation;
-    }
-
-    public String getZipCode() {
-        return zipCode;
-    }
-
-    public void setZipCode(String zipCode) {
-        this.zipCode = zipCode;
-    }
+    @Column(name = "longitude")
+    private Double longitude;
 }

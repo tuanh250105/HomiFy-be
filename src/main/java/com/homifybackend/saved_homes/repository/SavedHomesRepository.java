@@ -18,28 +18,30 @@ public interface SavedHomesRepository extends JpaRepository<CustomerFavorite, Cu
 
     // ===== LIST saved homes =====
     @Query(value = """
-        SELECT
-          cf.property_id AS id,
-          sl.id AS listingId,
-          'BUY' AS listingType,
-          a.street AS title,
-          CONCAT(a.street, ', ', a.city, ', ', a.province) AS address,
-          sl.current_price AS price,
-          sl.sale_status AS status,
-          p.beds AS beds,
-          p.baths AS baths,
-          p.area AS sqft,
-          NULL AS img,
-          'For sale' AS type,
-          cf.date_added AS addedAt
-        FROM customer_favorites cf
-        JOIN properties p ON p.property_id = cf.property_id
-        JOIN addresses a ON a.address_id = p.address_id
-        LEFT JOIN sale_listings sl ON sl.property_id = p.property_id
-        WHERE cf.customer_id = :customerId
-        ORDER BY cf.date_added DESC
-      """, nativeQuery = true)
+    SELECT
+      cf.property_id AS id,                 -- đây là sell_request_id (đang dùng làm key remove)
+      sl.id AS listingId,                   -- sale_listings.id
+      'BUY' AS listingType,
+      a.street AS title,
+      CONCAT(a.street, ', ', a.city, ', ', a.province) AS address,
+      sl.current_price AS price,
+      COALESCE(sl.sale_status, sr.status) AS status,
+      COALESCE(p.beds, sr.est_beds) AS beds,
+      COALESCE(p.baths, sr.est_baths) AS baths,
+      COALESCE(p.area, sr.estimated_area) AS sqft,
+      NULL AS img,
+      'For sale' AS type,
+      cf.date_added AS addedAt
+    FROM customer_favorites cf
+    JOIN sell_requests sr ON sr.id = cf.property_id
+    JOIN addresses a ON a.address_id = sr.address_id
+    LEFT JOIN properties p ON p.address_id = sr.address_id
+    LEFT JOIN sale_listings sl ON sl.property_id = p.property_id
+    WHERE cf.customer_id = :customerId
+    ORDER BY cf.date_added DESC
+  """, nativeQuery = true)
     List<SavedHomeCardRow> findSavedHomes(@Param("customerId") Long customerId);
+
 
     // ===== DELETE favorite =====
     @Modifying

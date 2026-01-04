@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface SellRequestRepository extends JpaRepository<SellRequest, Long> {
-    List<SellRequest> findByOwnerIdOrderByCreatedAtDesc(Long ownerId);
+    // FIX: entity có field owner (Customer), không có ownerId
+    List<SellRequest> findByOwner_UserIdOrderByCreatedAtDesc(Long ownerId);
 }

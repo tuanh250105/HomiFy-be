@@ -1,57 +1,56 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import jakarta.persistence.Column;
+import lombok.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class User {
-
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "full_name")
+    @Column(name = "full_name", length = 100)
     private String fullName;
 
-    // spec: screen name (unique)
-    @Column(name = "screen_name")
-    private String screenName;
-
-    // spec: avatar/photo
-    @Column(name = "avatar_url")
-    private String avatarUrl;
-
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Column(name = "notes")
-    private String notes;
+    @Column(name = "registration_date")
+    private LocalDate registrationDate;
 
-    @Column(name = "address_id")
-    private Long addressId;
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
+    @Column(length = 20)
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
+    @Column(length = 20)
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
-    public String getScreenName() { return screenName; }
-    public void setScreenName(String screenName) { this.screenName = screenName; }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;
 
-    public String getAvatarUrl() { return avatarUrl; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Account account;
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-
-    public Long getAddressId() { return addressId; }
-    public void setAddressId(Long addressId) { this.addressId = addressId; }
-
+    @PrePersist
+    protected void onCreate() {
+        if (registrationDate == null) {
+            registrationDate = LocalDate.now();
+        }
+    }
 }

@@ -31,7 +31,6 @@ public class ExploreOptionsController {
         }
     }
 
-
     @GetMapping("/sell-requests/{id}")
     public ResponseEntity<SellRequestResponseDTO> get(@PathVariable Long id) {
         return ResponseEntity.ok(exploreOptionsService.getSellRequest(id));

@@ -1,46 +1,100 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "properties")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Property {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "property_id")
     private Long propertyId;
 
-    @Column(name = "address_id")
-    private Long addressId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private Customer owner;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
+
+    @Column(name = "year_built")
+    private Integer yearBuilt;
+
+    @Column(name = "floors")
+    private Integer floors;
+
+    @Column(name = "beds")
     private Integer beds;
+
+    @Column(name = "baths")
     private Integer baths;
 
     @Column(name = "area")
     private Double area;
 
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "property_type")
+    private String propertyType;
+
+
+    @OneToMany(
+            mappedBy = "property",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Room> rooms = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transport_rating_id")
+    private TransportRating transportRating;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appliance_rating_id")
+    private ApplianceRating applianceRating;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Property() {}
+    // 1:1 Features
+    @OneToOne(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private SecurityFeatures securityFeatures;
 
-    public Long getPropertyId() { return propertyId; }
-    public void setPropertyId(Long propertyId) { this.propertyId = propertyId; }
+    @OneToOne(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private OutdoorFeatures outdoorFeatures;
 
-    public Long getAddressId() { return addressId; }
-    public void setAddressId(Long addressId) { this.addressId = addressId; }
+    @OneToOne(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private EntertainmentFeatures entertainmentFeatures;
 
-    public Integer getBeds() { return beds; }
-    public void setBeds(Integer beds) { this.beds = beds; }
+    // 1:1 Rental Listing
+    @OneToOne(mappedBy = "property",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private RentalListing rentalListing;
 
-    public Integer getBaths() { return baths; }
-    public void setBaths(Integer baths) { this.baths = baths; }
+    @OneToOne(mappedBy = "property",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private SaleListing saleListing;
 
-    public Double getArea() { return area; }
-    public void setArea(Double area) { this.area = area; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

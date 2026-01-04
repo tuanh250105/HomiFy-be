@@ -20,24 +20,26 @@ public class CustomerToursService {
     }
 
     public CustomerToursResponseDTO getCustomerTours(long customerId) {
-        List<CustomerTourItemDTO> all = repo.findToursByCustomerId(customerId);
+        List<CustomerTourItemDTO> all = repo.findAllByCustomer(customerId);
+
+        LocalDate today = LocalDate.now();
 
         List<CustomerTourItemDTO> upcoming = new ArrayList<>();
         List<CustomerTourItemDTO> past = new ArrayList<>();
 
-        LocalDate today = LocalDate.now();
-
         for (CustomerTourItemDTO t : all) {
-            String st = (t.getStatus() == null) ? "" : t.getStatus().toUpperCase();
-            boolean isPastStatus = st.equals("COMPLETED")
-                    || st.equals("CANCELED_BY_AGENT")
-                    || st.equals("CANCELED_BY_CUSTOMER");
+            // Map DB status -> UI status (KHÔNG ĐỔI MODEL/ENUM)
+            // DB: APPROVED/PENDING/CANCELED
+            // UI: CONFIRMED/PENDING/CANCELED
+            t.setStatus(mapStatusForUi(t.getStatus()));
 
+            boolean isCanceled = "CANCELED".equalsIgnoreCase(t.getStatus());
             LocalDate d = t.getRequestedDate();
-            boolean isPastDate = (d != null && d.isBefore(today));
 
-            if (isPastStatus || isPastDate) past.add(t);
-            else upcoming.add(t);
+            boolean isUpcoming = (d != null && !d.isBefore(today)) && !isCanceled;
+
+            if (isUpcoming) upcoming.add(t);
+            else past.add(t);
         }
 
         return new CustomerToursResponseDTO(upcoming, past);
@@ -46,20 +48,32 @@ public class CustomerToursService {
     public void cancel(long customerId, long tourId) {
         int updated = repo.cancelIfOwnedByCustomer(tourId, customerId);
         if (updated == 0) {
-            throw new RuntimeException("This tour is no longer available.");
+            throw new RuntimeException("Tour not found or not allowed.");
         }
     }
 
     public void reschedule(long customerId, long tourId, CustomerRescheduleRequest req) {
-        if (req.getRequestedDate() == null || req.getRequestedDate().isBlank()
+        if (req == null || req.getRequestedDate() == null || req.getRequestedDate().isBlank()
                 || req.getTimeSlot() == null || req.getTimeSlot().isBlank()) {
             throw new RuntimeException("Invalid request.");
         }
 
-        LocalDate date = LocalDate.parse(req.getRequestedDate());
-        int updated = repo.rescheduleIfOwnedByCustomer(tourId, customerId, date, req.getTimeSlot().trim());
+        LocalDate date = LocalDate.parse(req.getRequestedDate().trim());
+        String timeSlot = req.getTimeSlot().trim();
+
+        int updated = repo.rescheduleIfOwnedByCustomer(tourId, customerId, date, timeSlot);
         if (updated == 0) {
-            throw new RuntimeException("This tour is no longer available.");
+            throw new RuntimeException("Tour not found or not allowed.");
         }
+    }
+
+    private String mapStatusForUi(String dbStatus) {
+        if (dbStatus == null) return "PENDING";
+        String s = dbStatus.trim().toUpperCase();
+        if ("APPROVED".equals(s)) return "CONFIRMED";
+        if ("PENDING".equals(s)) return "PENDING";
+        if ("CANCELED".equals(s)) return "CANCELED";
+        // fallback an toàn
+        return s;
     }
 }

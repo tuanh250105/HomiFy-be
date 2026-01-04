@@ -1,14 +1,10 @@
 package com.homifybackend.manage_personalinfo.dto;
 
 public class ManagePersonalInfoDTO {
-
     private String fullName;
     private String email;
     private String phoneNumber;
     private String city;
-    private String notes;
-
-    private String screenName;
     private String avatarUrl;
 
     public String getFullName() { return fullName; }
@@ -22,12 +18,6 @@ public class ManagePersonalInfoDTO {
 
     public String getCity() { return city; }
     public void setCity(String city) { this.city = city; }
-
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-
-    public String getScreenName() { return screenName; }
-    public void setScreenName(String screenName) { this.screenName = screenName; }
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }

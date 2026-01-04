@@ -14,20 +14,6 @@ public class CustomerTourItemDTO {
 
     private String addressText;
 
-    public CustomerTourItemDTO() {}
-
-    public CustomerTourItemDTO(Long id, Long saleListingId, LocalDate requestedDate, String timeSlot,
-                               String status, Long agentId, String agentName, String addressText) {
-        this.id = id;
-        this.saleListingId = saleListingId;
-        this.requestedDate = requestedDate;
-        this.timeSlot = timeSlot;
-        this.status = status;
-        this.agentId = agentId;
-        this.agentName = agentName;
-        this.addressText = addressText;
-    }
-
     public Long getId() { return id; }
     public Long getSaleListingId() { return saleListingId; }
     public LocalDate getRequestedDate() { return requestedDate; }

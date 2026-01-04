@@ -1,13 +1,12 @@
 package com.homifybackend.manage_personalinfo.repository;
 
-import org.springframework.stereotype.Repository;
-
-import com.homifybackend.model.User;
 import com.homifybackend.model.Account;
 import com.homifybackend.model.Address;
-
+import com.homifybackend.model.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -22,22 +21,42 @@ public class ManagePersonalInfoRepository {
     }
 
     public Account findAccountByUserId(Long userId) {
-        List<Account> list = entityManager
-                .createQuery("SELECT a FROM Account a WHERE a.userId = :userId", Account.class)
-                .setParameter("userId", userId)
-                .getResultList();
-        return list.isEmpty() ? null : list.get(0);
+        TypedQuery<Account> q = entityManager.createQuery(
+                "SELECT a FROM Account a WHERE a.user.userId = :userId",
+                Account.class
+        );
+        q.setParameter("userId", userId);
+
+        List<Account> rs = q.getResultList();
+        return rs.isEmpty() ? null : rs.get(0);
     }
 
     public Address findAddressById(Long addressId) {
         return entityManager.find(Address.class, addressId);
     }
 
-    public <T> T save(T entity) {
-        if (!entityManager.contains(entity)) {
-            entityManager.persist(entity);
-            return entity;
+    public User saveUser(User user) {
+        // user lấy ra từ find() thường là managed, merge vẫn an toàn
+        return entityManager.merge(user);
+    }
+
+    public Account saveAccount(Account account) {
+        return entityManager.merge(account);
+    }
+
+    public Address saveAddress(Address address) {
+        // Address mới => persist, có id => merge
+        try {
+            // nếu entity có getter getAddressId()
+            Long id = address.getAddressId();
+            if (id == null) {
+                entityManager.persist(address);
+                return address;
+            }
+            return entityManager.merge(address);
+        } catch (Exception e) {
+            // fallback nếu Address của bạn không dùng getAddressId()
+            return entityManager.merge(address);
         }
-        return entityManager.merge(entity);
     }
 }

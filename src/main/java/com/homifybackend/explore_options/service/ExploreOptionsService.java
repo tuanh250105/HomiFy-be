@@ -5,6 +5,7 @@ import com.homifybackend.explore_options.dto.SellRequestResponseDTO;
 import com.homifybackend.explore_options.repository.AddressRepository;
 import com.homifybackend.explore_options.repository.SellRequestRepository;
 import com.homifybackend.model.Address;
+import com.homifybackend.model.Customer;
 import com.homifybackend.model.SellRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,12 +40,19 @@ public class ExploreOptionsService {
         }
 
         SellRequest sr = new SellRequest();
-        sr.setOwnerId(dto.getOwnerId());
+
+        // FIX: SellRequest có owner là Customer (FK sell_requests.owner_id -> customers.user_id)
+        // Tạo "reference" customer chỉ set id (miễn là customer id tồn tại trong DB)
+        Customer owner = new Customer();
+        // Nếu Customer class của bạn dùng field khác tên userId thì đổi dòng này cho đúng.
+        owner.setUserId(dto.getOwnerId());
+        sr.setOwner(owner);
+
         sr.setAddress(address);
 
         sr.setEstBeds(nvl(dto.getBedrooms()));
 
-        // FIX: estBaths = full + half*0.5 + threeQuarter*0.75, rounded
+        // estBaths = full + half*0.5 + threeQuarter*0.75, rounded -> int
         int full = nvl(dto.getBathroomsFull());
         int half = nvl(dto.getBathroomsHalf());
         int tq = nvl(dto.getBathroomsThreeQuarter());
@@ -61,7 +69,7 @@ public class ExploreOptionsService {
 
         sr.setEstimatedArea(dto.getLivingArea());
 
-        // FIX: chỉ dùng buildNotes, không gọi buildNotesJson
+        // notes
         sr.setNeededRepairNotes(buildNotes(dto));
 
         sr = sellRequestRepository.save(sr);
@@ -77,7 +85,7 @@ public class ExploreOptionsService {
     }
 
     public List<SellRequestResponseDTO> listByOwner(Long ownerId) {
-        List<SellRequest> list = sellRequestRepository.findByOwnerIdOrderByCreatedAtDesc(ownerId);
+        List<SellRequest> list = sellRequestRepository.findByOwner_UserIdOrderByCreatedAtDesc(ownerId);
         List<SellRequestResponseDTO> out = new ArrayList<>();
         for (SellRequest sr : list) {
             String addrText = (sr.getAddress() != null) ? sr.getAddress().getStreet() : null;
@@ -141,7 +149,10 @@ public class ExploreOptionsService {
     private SellRequestResponseDTO toResponse(SellRequest sr, String addressText) {
         SellRequestResponseDTO r = new SellRequestResponseDTO();
         r.setId(sr.getId());
-        r.setOwnerId(sr.getOwnerId());
+
+        // FIX: ownerId lấy từ sr.getOwner().getUserId()
+        r.setOwnerId(sr.getOwner() != null ? sr.getOwner().getUserId() : null);
+
         r.setAddressId(sr.getAddress() != null ? sr.getAddress().getAddressId() : null);
         r.setAddressText(addressText);
         r.setEstBeds(sr.getEstBeds());
@@ -149,10 +160,12 @@ public class ExploreOptionsService {
         r.setFloors(sr.getFloors());
         r.setHasBasement(sr.getHasBasement());
         r.setEstimatedArea(sr.getEstimatedArea());
-        r.setStatus(sr.getStatus());
+
+        // FIX: status là enum -> trả string
+        r.setStatus(sr.getStatus() != null ? sr.getStatus().name() : null);
+
         r.setCreatedAt(sr.getCreatedAt());
 
-        // nếu DTO bạn đã thêm các field này thì giữ lại
         r.setNeededRepairNotes(sr.getNeededRepairNotes());
         r.setExteriorCondition(sr.getExteriorCondition());
         r.setLivingRoomCondition(sr.getLivingRoomCondition());

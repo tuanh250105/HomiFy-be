@@ -20,8 +20,8 @@ public class CustomerToursController {
     }
 
     @GetMapping
-    public CustomerToursResponseDTO getTours(@RequestParam long customerId) {
-        return service.getCustomerTours(customerId);
+    public ResponseEntity<CustomerToursResponseDTO> getTours(@RequestParam long customerId) {
+        return ResponseEntity.ok(service.getCustomerTours(customerId));
     }
 
     @PostMapping("/{tourId}/cancel")

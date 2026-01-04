@@ -10,17 +10,15 @@ import java.util.List;
 public interface RentalListingReposity extends JpaRepository<RentalListing, Long> {
     @Query("""
         SELECT r FROM RentalListing r
-        JOIN r.property p
-        JOIN p.address a
+        JOIN FETCH r.property p
+        JOIN FETCH p.address a
         WHERE a.latitude BETWEEN :minLat AND :maxLat
           AND a.longitude BETWEEN :minLng AND :maxLng
           AND r.rentalStatus = :status
           AND (:minRent IS NULL OR r.monthlyRent >= :minPrice)
           AND (:maxRent IS NULL OR r.monthlyRent <= :maxPrice)
-          AND (
-                :propertyClass IS NULL
-                OR TYPE(p) = :propertyClass
-              )
+          AND (:propertyType IS NULL OR UPPER(p.propertyType) = UPPER(:propertyType))
+
     """)
     List<RentalListing> findByMapArea(
             @Param("minLat") Double minLat,
@@ -29,8 +27,8 @@ public interface RentalListingReposity extends JpaRepository<RentalListing, Long
             @Param("maxLng") Double maxLng,
             @Param("minRent") Double minPrice,
             @Param("maxRent") Double maxPrice,
-            @Param("propertyClass") Class<? extends Property> propertyClass,
-            @Param("status") RentalListingStatus status
+            @Param("status") RentalListingStatus status,
+            @Param("propertyType") String propertyType
     );
 
     Optional<RentalListing> findByProperty_PropertyId(Long propertyId);

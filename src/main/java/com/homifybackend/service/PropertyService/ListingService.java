@@ -32,26 +32,36 @@ public class ListingService {
         this.listingDetailMapper = listingDetailMapper;
     }
 
-    public List<ListingMapDTO> loadListing(Double minLat, Double maxLat, Double minLng, Double maxLng, Integer zoom, String category, Double minPrice, Double maxPrice, String propertyType, String keyword){
-        Class<? extends Property> propertyClass = PropertyFilterType.from(propertyType);
+    public List<ListingMapDTO> loadListing(
+            Double minLat, Double maxLat, Double minLng, Double maxLng, Integer zoom,
+            String category, Double minPrice, Double maxPrice, String propertyType, String keyword) {
 
         return switch (category.toUpperCase()) {
-            case "BUY" ->
-                    saleListingReposity.findByMapArea(minLat, maxLat, minLng, maxLng, minPrice, maxPrice, propertyClass, SaleListingStatus.ACTIVE).stream()
-                            .map(saleListing -> listingMapper.toMapDTO(saleListing))
-                            .toList();
-            case "SOLD" ->
-                    saleListingReposity.findByMapArea(minLat, maxLat, minLng, maxLng, minPrice, maxPrice, propertyClass, SaleListingStatus.SOLD).stream()
-                            .map(saleListing -> listingMapper.toMapDTO(saleListing))
-                            .toList();
-            case "RENT" ->
-                    rentalListingReposity.findByMapArea(minLat, maxLat, minLng, maxLng, minPrice, maxPrice, propertyClass, RentalListingStatus.ACTIVE).stream()
-                            .map(rentalListing -> listingMapper.toMapDTO(rentalListing))
-                            .toList();
+            case "BUY" -> saleListingReposity.findByMapArea(
+                            minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
+                            SaleListingStatus.ACTIVE, propertyType
+                    ).stream()
+                    .map(listingMapper::toMapDTO)
+                    .toList();
+
+            case "SOLD" -> saleListingReposity.findByMapArea(
+                            minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
+                            SaleListingStatus.SOLD, propertyType
+                    ).stream()
+                    .map(listingMapper::toMapDTO)
+                    .toList();
+
+            case "RENT" -> rentalListingReposity.findByMapArea(
+                            minLat, maxLat, minLng, maxLng, minPrice, maxPrice,
+                            RentalListingStatus.ACTIVE, propertyType
+                    ).stream()
+                    .map(listingMapper::toMapDTO)
+                    .toList();
 
             default -> throw new IllegalArgumentException("Invalid category");
         };
     }
+
 
     public ListingDetailResponse getListingDetail(ListingType type, Long propertyId) {
 

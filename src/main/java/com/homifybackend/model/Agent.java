@@ -2,6 +2,8 @@ package com.homifybackend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 
@@ -12,14 +14,18 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @PrimaryKeyJoinColumn(name = "user_id")
-public class Agent extends User {
+public class Agent extends User{
 
-  @Column(name = "license_id", length = 50)
-  private String licenseId;
+    @Column(name = "license_id", length = 50)
+    private String licenseId;
 
-  @Column(columnDefinition = "TEXT")
-  private String bio;
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio;
 
-  @Column(name = "rate", precision = 3, scale = 2)
-  private BigDecimal rate;
+    @Column(name = "rate", precision = 3, scale = 2)
+    private BigDecimal rate;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "specialties", columnDefinition = "TEXT[]")
+    private String[] specialties;
 }

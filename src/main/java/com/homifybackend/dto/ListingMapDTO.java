@@ -11,6 +11,7 @@ import lombok.*;
 public class ListingMapDTO {
 
     private Long listingId;
+    private Long propertyId;
     private Double latitude;
     private Double longitude;
 

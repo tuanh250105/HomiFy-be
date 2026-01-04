@@ -18,15 +18,15 @@ import java.util.List;
 public class SaleListing {
 
     @Id
-    @Column(name = "property_id")
-    private Long propertyId;
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
     @JoinColumn(name = "property_id")
     private Property property;
 

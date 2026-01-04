@@ -39,8 +39,12 @@ public class Property {
     @Column(name = "area")
     private Double area;
 
+
     @Column(name = "description")
     private String description;
+
+    @Column(name = "property_type")
+    private String propertyType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_rating_id")

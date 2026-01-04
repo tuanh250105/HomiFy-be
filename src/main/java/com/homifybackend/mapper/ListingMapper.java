@@ -6,7 +6,6 @@ import com.homifybackend.dto.ListingMapDTO;
 import com.homifybackend.model.*;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
-
 @Component
 public class ListingMapper {
 
@@ -18,12 +17,6 @@ public class ListingMapper {
                 ? "SOLD"
                 : "BUY";
 
-//        Long addressId,
-//        String city,
-//        String province,
-//        String street,
-//        Double latitude,
-//        Double longitude
         AddressDTO addressDTO = new AddressDTO(
                 address.getAddressId(),
                 address.getCity(),
@@ -33,18 +26,14 @@ public class ListingMapper {
                 address.getLongitude()
         );
 
-        // Sử dụng Builder hoặc constructor 7 tham số đầy đủ
         return ListingMapDTO.builder()
-                .listingId(listing.getProperty().getPropertyId())
+                .listingId(listing.getId()) // PK riêng của Listing
+                .propertyId(listing.getProperty().getPropertyId())
                 .latitude(address.getLatitude())
                 .longitude(address.getLongitude())
                 .price(listing.getCurrentPrice() != null ? listing.getCurrentPrice().doubleValue() : null)
                 .listingType(listingType)
-                .propertyType(
-                        Hibernate.getClass(property)
-                                .getSimpleName()
-                                .toUpperCase()
-                )
+                .propertyType(property.getPropertyType())
                 .address(addressDTO)
                 .build();
     }
@@ -63,16 +52,13 @@ public class ListingMapper {
         );
 
         return ListingMapDTO.builder()
-                .listingId(listing.getProperty().getPropertyId())
+                .listingId(listing.getId()) // PK riêng của Listing
+                .propertyId(listing.getProperty().getPropertyId())
                 .latitude(address.getLatitude())
                 .longitude(address.getLongitude())
                 .price(listing.getMonthlyRent() != null ? listing.getMonthlyRent().doubleValue() : null)
                 .listingType("RENT")
-                .propertyType(
-                        Hibernate.getClass(property)
-                                .getSimpleName()
-                                .toUpperCase()
-                )
+                .propertyType(property.getPropertyType())
                 .address(addressDTO)
                 .build();
     }

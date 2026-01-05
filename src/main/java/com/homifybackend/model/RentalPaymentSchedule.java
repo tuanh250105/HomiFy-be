@@ -1,72 +1,73 @@
-package com.homifybackend.model;
+// package com.homifybackend.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+// import jakarta.persistence.*;
+// import lombok.*;
+// import org.hibernate.annotations.CreationTimestamp;
+// import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+// import java.math.BigDecimal;
+// import java.time.LocalDate;
+// import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "rental_payment_schedules")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@ToString(exclude = {"rentalContract"}) // Tránh vòng lặp khi in log
-public class RentalPaymentSchedule {
+// @Entity
+// @Table(name = "rental_payment_schedules")
+// @Getter
+// @Setter
+// @NoArgsConstructor
+// @AllArgsConstructor
+// @Builder
+// @ToString(exclude = {"rentalContract"}) // Tránh vòng lặp khi in log
+// public class RentalPaymentSchedule {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "schedule_id")
-  private Long scheduleId;
+// @Id
+// @GeneratedValue(strategy = GenerationType.IDENTITY)
+// @Column(name = "schedule_id")
+// private Long scheduleId;
 
-  @Column(name = "rental_contract_id", nullable = false)
-  private Long rentalContractId;
+// @Column(name = "rental_contract_id", nullable = false)
+// private Long rentalContractId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(
-      name = "rental_contract_id",
-      referencedColumnName = "id",
-      insertable = false,
-      updatable = false
-  )
-  private RentalContract rentalContract;
+// @ManyToOne(fetch = FetchType.LAZY)
+// @JoinColumn(
+// name = "rental_contract_id",
+// referencedColumnName = "id",
+// insertable = false,
+// updatable = false
+// )
+// private RentalContract rentalContract;
 
-  @Column(name = "period_month", nullable = false)
-  private LocalDate periodMonth;
+// @Column(name = "period_month", nullable = false)
+// private LocalDate periodMonth;
 
-  @Column(name = "due_date", nullable = false)
-  private LocalDate dueDate;
+// @Column(name = "due_date", nullable = false)
+// private LocalDate dueDate;
 
-  @Column(name = "amount_due", nullable = false, precision = 18, scale = 2)
-  private BigDecimal amountDue;
+// @Column(name = "amount_due", nullable = false, precision = 18, scale = 2)
+// private BigDecimal amountDue;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private RentalPaymentScheduleStatus status = RentalPaymentScheduleStatus.PENDING;
+// @Enumerated(EnumType.STRING)
+// @Column(length = 20, nullable = false)
+// private RentalPaymentScheduleStatus status =
+// RentalPaymentScheduleStatus.PENDING;
 
-  @Column(name = "matched_txn_id")
-  private Long matchedTxnId;
+// @Column(name = "matched_txn_id")
+// private Long matchedTxnId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "matched_txn_id", insertable = false, updatable = false)
-  private BankTransaction matchedTransaction;
+// @ManyToOne(fetch = FetchType.LAZY)
+// @JoinColumn(name = "matched_txn_id", insertable = false, updatable = false)
+// private BankTransaction matchedTransaction;
 
-  @Column(name = "matched_at")
-  private LocalDateTime matchedAt;
+// @Column(name = "matched_at")
+// private LocalDateTime matchedAt;
 
-  @Column(columnDefinition = "TEXT")
-  private String note;
+// @Column(columnDefinition = "TEXT")
+// private String note;
 
-  @CreationTimestamp
-  @Column(name = "created_at", updatable = false)
-  private LocalDateTime createdAt;
+// @CreationTimestamp
+// @Column(name = "created_at", updatable = false)
+// private LocalDateTime createdAt;
 
-  @UpdateTimestamp
-  @Column(name = "updated_at")
-  private LocalDateTime updatedAt;
-}
+// @UpdateTimestamp
+// @Column(name = "updated_at")
+// private LocalDateTime updatedAt;
+// }

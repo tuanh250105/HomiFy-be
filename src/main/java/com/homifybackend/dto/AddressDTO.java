@@ -8,9 +8,9 @@ public record AddressDTO(
          String province,
          String street,
          Double latitude,
-         Double longitude
-)
-    { public static AddressDTO from(Address address) {
+         Double longitude)
+{
+    public static AddressDTO from(Address address) {
         return new AddressDTO(
                 address.getAddressId(),
                 address.getCity(),

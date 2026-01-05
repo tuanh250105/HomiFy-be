@@ -1,7 +1,8 @@
 package com.homifybackend.controller.crm_tour;
 
 import com.homifybackend.model.Customer;
-import com.homifybackend.service.crm.CustomerService;
+import com.homifybackend.model.Property;
+import com.homifybackend.service.crm_tour.CustomerService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,16 @@ public class CustomerController {
         return service.getAllCustomers();
     }
 
+    @GetMapping("/{id}/suggestions")
+    public List<Property> getSuggestions(@PathVariable Long id) {
+        return service.getSuggestedProperties(id);
+    }
+
     @PutMapping("/{id}")
     public Customer update(@PathVariable Long id, @RequestBody Customer customer) {
         return service.updateCustomer(id, customer);
     }
-    // Thêm vào CustomerController.java
+
     @PutMapping("/{id}/favorite")
     public Customer toggleFavorite(@PathVariable Long id, @RequestBody Map<String, Boolean> update) {
         return service.toggleFavorite(id, update);
@@ -40,10 +46,5 @@ public class CustomerController {
     @PostMapping("/{id}/contract")
     public Customer createContract(@PathVariable Long id) {
         return service.createContract(id);
-    }
-
-    @PostMapping
-    public Customer create(@RequestBody Customer customer) {
-        return service.create(customer);
     }
 }

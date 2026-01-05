@@ -1,4 +1,4 @@
-package com.homifybackend.service.crm;
+package com.homifybackend.service.crm_tour;
 
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;

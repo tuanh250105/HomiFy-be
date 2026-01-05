@@ -2,11 +2,13 @@ package com.homifybackend.controller.crm_tour;
 
 import com.homifybackend.model.Tour;
 import com.homifybackend.repository.TourRepository;
+import com.homifybackend.service.crm_tour.TourService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tours")
@@ -14,9 +16,11 @@ import java.util.List;
 public class TourController {
 
     private final TourRepository repository;
+    private final TourService tourService;
 
-    public TourController(TourRepository repository) {
+    public TourController(TourRepository repository, TourService tourService) {
         this.repository = repository;
+        this.tourService = tourService;
     }
 
     @GetMapping
@@ -37,43 +41,11 @@ public class TourController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Tour> update(@PathVariable Long id, @RequestBody Tour data) {
-        return repository.findById(id)
-                .map(existingTour -> {
-                    String newStatus = data.getStatus();
-                    String newDate = data.getDate();
-                    String newTime = data.getTime();
-
-                    boolean isConfirming = "CONFIRMED".equalsIgnoreCase(newStatus);
-                    boolean isChangingSchedule = newDate != null || newTime != null;
-
-                    if (isConfirming || isChangingSchedule) {
-                        String checkDate = newDate != null ? newDate : existingTour.getDate();
-                        String checkTime = newTime != null ? newTime : existingTour.getTime();
-
-                        boolean conflict = repository.existsByDateAndTimeAndStatusIgnoreCaseAndIdNot(
-                                checkDate, checkTime, "CONFIRMED", id);
-
-                        if (conflict) {
-                            return ResponseEntity.status(HttpStatus.CONFLICT).<Tour>build();
-                        }
-                    }
-                    
-                    if (newStatus != null) {
-                        existingTour.setStatus(newStatus.toUpperCase());
-                    }
-                    if (newDate != null) {
-                        existingTour.setDate(newDate);
-                    }
-                    if (newTime != null) {
-                        existingTour.setTime(newTime);
-                    }
-                    if (data.getRescheduleCount() != null) {
-                        existingTour.setRescheduleCount(data.getRescheduleCount());
-                    }
-
-                    Tour saved = repository.save(existingTour);
-                    return ResponseEntity.ok(saved);
-                })
+        Optional<Tour> updatedTour = tourService.updateTourStatus(id, data);
+        if (updatedTour == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        return updatedTour.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 }

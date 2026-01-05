@@ -55,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/zestimate/health/**").permitAll()
                         .requestMatchers("/api/agentlistings/**").permitAll()
                         .requestMatchers("/api/customer-tours/**").permitAll()
+                        .requestMatchers("/api/tours/**").permitAll()
+                        .requestMatchers("/api/crm/customers/**").permitAll()
+                        .requestMatchers("/api/agents/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

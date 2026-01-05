@@ -31,10 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
-<<<<<<< HEAD
-
 .env
-=======
 .DS_Store
-.DS_Store
->>>>>>> feature/crm_tour
+HomiFy-fe (gốc)/

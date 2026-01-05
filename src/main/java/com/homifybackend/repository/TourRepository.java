@@ -7,6 +7,7 @@ import java.util.List;
 
 @Repository
 public interface TourRepository extends JpaRepository<Tour, Long> {
+    List<Tour> findBySaleListingAgentUserId(Long agentId);
     List<Tour> findByRequesterUserIdAndStatus(Long userId, String status);
     boolean existsByDateAndTimeAndStatusIgnoreCaseAndIdNot(String date, String time, String status, Long id);
 }

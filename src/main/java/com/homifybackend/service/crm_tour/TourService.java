@@ -3,8 +3,10 @@ package com.homifybackend.service.crm_tour;
 import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Tour;
+import com.homifybackend.model.SaleListing;
 import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.repository.TourRepository;
+import com.homifybackend.repository.SaleListingRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,10 +17,19 @@ import java.util.Optional;
 public class TourService {
     private final TourRepository tourRepository;
     private final CustomerRepository customerRepository;
+    private final SaleListingRepository saleListingRepository; // Thêm repository
 
-    public TourService(TourRepository tourRepository, CustomerRepository customerRepository) {
+    public TourService(TourRepository tourRepository,
+                       CustomerRepository customerRepository,
+                       SaleListingRepository saleListingRepository) {
         this.tourRepository = tourRepository;
         this.customerRepository = customerRepository;
+        this.saleListingRepository = saleListingRepository;
+    }
+
+    // Hàm lấy danh sách Tour theo đúng Agent ID
+    public List<Tour> findToursByAgent(Long agentId) {
+        return tourRepository.findBySaleListingAgentUserId(agentId);
     }
 
     public List<Tour> findAllTours() {
@@ -36,6 +47,18 @@ public class TourService {
             tour.setDate(dto.getPreferredTimes().get(0).getDate());
             tour.setTime(dto.getPreferredTimes().get(0).getTime());
         }
+
+        // --- PHẦN GÁN SALE LISTING ĐỂ BIẾT AGENT NÀO QUẢN LÝ ---
+        if (dto.getListingId() != null) {
+            saleListingRepository.findById(dto.getListingId()).ifPresent(listing -> {
+                tour.setSaleListing(listing);
+                // Gán property string để hiển thị nếu cần
+                if (listing.getProperty() != null) {
+                    tour.setProperty(listing.getProperty().getPropertyType());
+                }
+            });
+        }
+        // -----------------------------------------------------
 
         customerRepository.findByFullName(dto.getBuyerName()).orElseGet(() -> {
             Customer newCustomer = new Customer();
@@ -72,6 +95,7 @@ public class TourService {
             if (data.getDate() != null) existingTour.setDate(data.getDate());
             if (data.getTime() != null) existingTour.setTime(data.getTime());
             if (data.getRescheduleCount() != null) existingTour.setRescheduleCount(data.getRescheduleCount());
+
             customerRepository.findByFullName(existingTour.getBuyer()).ifPresent(customer -> {
                 int currentScore = customer.getInterestScore();
                 int scoreChange = 0;
@@ -79,11 +103,9 @@ public class TourService {
                 if ("APPROVED".equalsIgnoreCase(newStatus) && !"APPROVED".equalsIgnoreCase(oldStatus)) {
                     scoreChange += 20;
                 }
-
                 if ("CANCELED".equalsIgnoreCase(newStatus) && !"CANCELED".equalsIgnoreCase(oldStatus)) {
                     scoreChange -= 20;
                 }
-
                 if (isRescheduling) {
                     scoreChange -= 10;
                 }

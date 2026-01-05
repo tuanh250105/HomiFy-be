@@ -48,6 +48,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/api").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/listings/**").permitAll()
+                        .requestMatchers("/api/account/saved-homes/**").permitAll()
+                        .requestMatchers("/api/agent/profile/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

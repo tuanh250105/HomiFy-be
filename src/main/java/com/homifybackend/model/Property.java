@@ -46,11 +46,11 @@ public class Property {
     @Column(name = "property_type")
     private String propertyType;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_rating_id")
     private TransportRating transportRating;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "appliance_rating_id")
     private ApplianceRating applianceRating;
 

@@ -8,8 +8,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface PropertyRepository extends JpaRepository<Property, Long> {
-    
-    // ✅ Load property with all features (security, entertainment, outdoor, transport, appliance ratings)
+
+    // ✅ Load property with all features (security, entertainment, outdoor,
+    // transport, appliance ratings)
     @Query("SELECT p FROM Property p " +
             "LEFT JOIN FETCH p.securityFeatures " +
             "LEFT JOIN FETCH p.entertainmentFeatures " +

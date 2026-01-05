@@ -33,28 +33,35 @@ public class AgentListingService {
 
     private void validateOwnerIsCustomerIfPresent(ListingRequest req) {
         Long ownerId = req.getProperty() != null ? req.getProperty().getOwnerId() : null;
-        if (ownerId == null) return;
+        if (ownerId == null)
+            return;
         if (!customerRepo.existsById(ownerId)) {
             throw new IllegalArgumentException("Invalid ownerId=" + ownerId + " (not found in customers)");
         }
     }
 
     private static String normType(String t) {
-        if (t == null) return null;
+        if (t == null)
+            return null;
         return t.trim().toUpperCase();
     }
 
     private static String currentType(Property p) {
-        if (p instanceof TownHouse) return "TOWN_HOUSE";
-        if (p instanceof Apartment) return "APARTMENT";
-        if (p instanceof Villa) return "VILLA";
-        if (p instanceof SingleHouse) return "SINGLE_HOUSE";
+        if (p instanceof TownHouse)
+            return "TOWN_HOUSE";
+        if (p instanceof Apartment)
+            return "APARTMENT";
+        if (p instanceof Villa)
+            return "VILLA";
+        if (p instanceof SingleHouse)
+            return "SINGLE_HOUSE";
         return "PROPERTY";
     }
 
     private Property newPropertyByType(String type) {
         String t = normType(type);
-        if (t == null) return new Property();
+        if (t == null)
+            return new Property();
         return switch (t) {
             case "TOWN_HOUSE" -> new TownHouse();
             case "APARTMENT" -> new Apartment();
@@ -66,7 +73,8 @@ public class AgentListingService {
 
     private void switchSubtype(Long propertyId, String newType) {
         String t = normType(newType);
-        if (t == null) return;
+        if (t == null)
+            return;
 
         jdbc.update("DELETE FROM town_houses WHERE property_id=?", propertyId);
         jdbc.update("DELETE FROM apartments WHERE property_id=?", propertyId);
@@ -78,7 +86,8 @@ public class AgentListingService {
             case "APARTMENT" -> jdbc.update("INSERT INTO apartments(property_id) VALUES (?)", propertyId);
             case "VILLA" -> jdbc.update("INSERT INTO villas(property_id) VALUES (?)", propertyId);
             case "SINGLE_HOUSE" -> jdbc.update("INSERT INTO single_houses(property_id) VALUES (?)", propertyId);
-            default -> { }
+            default -> {
+            }
         }
 
         // ✅ Detach from cache without clearing entire context
@@ -104,11 +113,13 @@ public class AgentListingService {
                 .orElseThrow(() -> new NotFoundException("Agent not found: " + agentId));
 
         Long ownerId = req.getProperty() != null ? req.getProperty().getOwnerId() : null;
-        if (ownerId == null) throw new IllegalArgumentException("ownerId is required (property.ownerId)");
+        if (ownerId == null)
+            throw new IllegalArgumentException("ownerId is required (property.ownerId)");
         Customer owner = customerRepo.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + ownerId));
 
-        if (req.getAddress() == null) throw new IllegalArgumentException("address is required");
+        if (req.getAddress() == null)
+            throw new IllegalArgumentException("address is required");
         Address addr;
         if (req.getAddress().getAddressId() != null) {
             addr = addressRepo.findById(req.getAddress().getAddressId())
@@ -187,7 +198,8 @@ public class AgentListingService {
                 .orElseThrow(() -> new NotFoundException("Agent not found: " + agentId));
 
         Property p = s.getProperty();
-        if (p == null) throw new IllegalStateException("Listing missing property");
+        if (p == null)
+            throw new IllegalStateException("Listing missing property");
 
         String desiredType = req.getProperty() != null ? req.getProperty().getPropertyType() : null;
         if (desiredType != null && !normType(desiredType).equals(currentType(p))) {
@@ -206,15 +218,23 @@ public class AgentListingService {
             Address addr = p.getAddress() != null ? p.getAddress() : new Address();
             if (req.getAddress().getAddressId() != null) {
                 addr = addressRepo.findById(req.getAddress().getAddressId())
-                        .orElseThrow(() -> new NotFoundException("Address not found: " + req.getAddress().getAddressId()));
+                        .orElseThrow(
+                                () -> new NotFoundException("Address not found: " + req.getAddress().getAddressId()));
             }
-            if (req.getAddress().getZipCode() != null) addr.setZipCode(req.getAddress().getZipCode());
-            if (req.getAddress().getCity() != null) addr.setCity(req.getAddress().getCity());
-            if (req.getAddress().getProvince() != null) addr.setProvince(req.getAddress().getProvince());
-            if (req.getAddress().getStreet() != null) addr.setStreet(req.getAddress().getStreet());
-            if (req.getAddress().getNation() != null) addr.setNation(req.getAddress().getNation());
-            if (req.getAddress().getLatitude() != null) addr.setLatitude(req.getAddress().getLatitude());
-            if (req.getAddress().getLongitude() != null) addr.setLongitude(req.getAddress().getLongitude());
+            if (req.getAddress().getZipCode() != null)
+                addr.setZipCode(req.getAddress().getZipCode());
+            if (req.getAddress().getCity() != null)
+                addr.setCity(req.getAddress().getCity());
+            if (req.getAddress().getProvince() != null)
+                addr.setProvince(req.getAddress().getProvince());
+            if (req.getAddress().getStreet() != null)
+                addr.setStreet(req.getAddress().getStreet());
+            if (req.getAddress().getNation() != null)
+                addr.setNation(req.getAddress().getNation());
+            if (req.getAddress().getLatitude() != null)
+                addr.setLatitude(req.getAddress().getLatitude());
+            if (req.getAddress().getLongitude() != null)
+                addr.setLongitude(req.getAddress().getLongitude());
             addr = addressRepo.save(addr);
             p.setAddress(addr);
         }
@@ -234,12 +254,14 @@ public class AgentListingService {
     }
 
     private ListingResponse updateRentalListing(Long agentId, Long id, ListingRequest req) {
-        // ✅ IMPORTANT: fetch images to avoid LazyInitializationException when applyToRent touches images
+        // ✅ IMPORTANT: fetch images to avoid LazyInitializationException when
+        // applyToRent touches images
         RentalListing r = rentRepo.findByIdWithImages(id)
                 .orElseThrow(() -> new NotFoundException("Rental listing not found: " + id));
 
         Property p = r.getProperty();
-        if (p == null) throw new IllegalStateException("Listing missing property");
+        if (p == null)
+            throw new IllegalStateException("Listing missing property");
 
         String desiredType = req.getProperty() != null ? req.getProperty().getPropertyType() : null;
         if (desiredType != null && !normType(desiredType).equals(currentType(p))) {
@@ -258,15 +280,23 @@ public class AgentListingService {
             Address addr = p.getAddress() != null ? p.getAddress() : new Address();
             if (req.getAddress().getAddressId() != null) {
                 addr = addressRepo.findById(req.getAddress().getAddressId())
-                        .orElseThrow(() -> new NotFoundException("Address not found: " + req.getAddress().getAddressId()));
+                        .orElseThrow(
+                                () -> new NotFoundException("Address not found: " + req.getAddress().getAddressId()));
             }
-            if (req.getAddress().getZipCode() != null) addr.setZipCode(req.getAddress().getZipCode());
-            if (req.getAddress().getCity() != null) addr.setCity(req.getAddress().getCity());
-            if (req.getAddress().getProvince() != null) addr.setProvince(req.getAddress().getProvince());
-            if (req.getAddress().getStreet() != null) addr.setStreet(req.getAddress().getStreet());
-            if (req.getAddress().getNation() != null) addr.setNation(req.getAddress().getNation());
-            if (req.getAddress().getLatitude() != null) addr.setLatitude(req.getAddress().getLatitude());
-            if (req.getAddress().getLongitude() != null) addr.setLongitude(req.getAddress().getLongitude());
+            if (req.getAddress().getZipCode() != null)
+                addr.setZipCode(req.getAddress().getZipCode());
+            if (req.getAddress().getCity() != null)
+                addr.setCity(req.getAddress().getCity());
+            if (req.getAddress().getProvince() != null)
+                addr.setProvince(req.getAddress().getProvince());
+            if (req.getAddress().getStreet() != null)
+                addr.setStreet(req.getAddress().getStreet());
+            if (req.getAddress().getNation() != null)
+                addr.setNation(req.getAddress().getNation());
+            if (req.getAddress().getLatitude() != null)
+                addr.setLatitude(req.getAddress().getLatitude());
+            if (req.getAddress().getLongitude() != null)
+                addr.setLongitude(req.getAddress().getLongitude());
             addr = addressRepo.save(addr);
             p.setAddress(addr);
         }

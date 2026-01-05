@@ -202,7 +202,8 @@ public class ListingMapper {
                 if (sec == null)
                     sec = new SecurityFeatures();
                 sec.setProperty(target);
-                // Support both old keys (cctvInstalled, securityGuard) and new keys (cctv, securityDoor)
+                // Support both old keys (cctvInstalled, securityGuard) and new keys (cctv,
+                // securityDoor)
                 sec.setHasCctv(asBoolean(p.getFeatures().getSecurity().get("cctv")));
                 sec.setHasSecurityDoor(asBoolean(p.getFeatures().getSecurity().get("securityDoor")));
                 target.setSecurityFeatures(sec);

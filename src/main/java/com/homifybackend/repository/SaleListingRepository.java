@@ -45,4 +45,8 @@ public interface SaleListingRepository extends JpaRepository<SaleListing, Long> 
     })
     @Query("SELECT sl FROM SaleListing sl")
     List<SaleListing> findAllWithDetails();
+
+
+    @Query("SELECT s FROM SaleListing s LEFT JOIN FETCH s.images WHERE s.id = :id")
+    Optional<SaleListing> findByIdWithImages(@Param("id") Long id);
 }

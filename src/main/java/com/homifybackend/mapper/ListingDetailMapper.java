@@ -50,7 +50,7 @@ public class ListingDetailMapper {
         List<ListingImageDTO> images = s.getImages() == null
                 ? List.of()
                 : s.getImages().stream()
-                .map(img -> new ListingImageDTO(img.getId(), img.getUrl())).toList();
+                .map(img -> new ListingImageDTO(img.getId(), img.getUrl(), img.getIsPrimary())).toList();
 
         return new SaleListingDTO(
                 s.getCurrentPrice(),

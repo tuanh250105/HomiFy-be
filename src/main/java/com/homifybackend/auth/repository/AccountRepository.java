@@ -15,7 +15,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByEmail(String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
-    
+    Optional<Account> findByUser_UserId(Long userId);
     /**
      * Find account by email with User fetched (JOIN FETCH to avoid LazyInitializationException)
      * DISTINCT is used to avoid duplicate results when using JOIN FETCH

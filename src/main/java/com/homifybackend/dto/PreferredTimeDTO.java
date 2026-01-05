@@ -6,6 +6,11 @@ public class PreferredTimeDTO {
 
     public PreferredTimeDTO() {}
 
+    public PreferredTimeDTO(String date, String time) {
+        this.date = date;
+        this.time = time;
+    }
+
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
 

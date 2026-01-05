@@ -1,5 +1,6 @@
 package com.homifybackend.service.crm_tour;
 
+import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Tour;
 import com.homifybackend.repository.CustomerRepository;
@@ -7,6 +8,7 @@ import com.homifybackend.repository.TourRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -17,6 +19,34 @@ public class TourService {
     public TourService(TourRepository tourRepository, CustomerRepository customerRepository) {
         this.tourRepository = tourRepository;
         this.customerRepository = customerRepository;
+    }
+
+    public List<Tour> findAllTours() {
+        return tourRepository.findAll();
+    }
+
+    @Transactional
+    public Tour createTourFromDTO(TourDTO dto) {
+        Tour tour = new Tour();
+        tour.setBuyer(dto.getBuyerName());
+        tour.setStatus("PENDING");
+        tour.setRescheduleCount(0);
+
+        if (dto.getPreferredTimes() != null && !dto.getPreferredTimes().isEmpty()) {
+            tour.setDate(dto.getPreferredTimes().get(0).getDate());
+            tour.setTime(dto.getPreferredTimes().get(0).getTime());
+        }
+
+        customerRepository.findByFullName(dto.getBuyerName()).orElseGet(() -> {
+            Customer newCustomer = new Customer();
+            newCustomer.setFullName(dto.getBuyerName());
+            newCustomer.setPhoneNumber(dto.getBuyerPhone());
+            newCustomer.setPipelineStatus("leads");
+            newCustomer.setInterestScore(0);
+            return customerRepository.save(newCustomer);
+        });
+
+        return tourRepository.save(tour);
     }
 
     @Transactional
@@ -42,7 +72,6 @@ public class TourService {
             if (data.getDate() != null) existingTour.setDate(data.getDate());
             if (data.getTime() != null) existingTour.setTime(data.getTime());
             if (data.getRescheduleCount() != null) existingTour.setRescheduleCount(data.getRescheduleCount());
-
             customerRepository.findByFullName(existingTour.getBuyer()).ifPresent(customer -> {
                 int currentScore = customer.getInterestScore();
                 int scoreChange = 0;
@@ -66,6 +95,7 @@ public class TourService {
                     customerRepository.save(customer);
                 }
             });
+
             return tourRepository.save(existingTour);
         });
     }

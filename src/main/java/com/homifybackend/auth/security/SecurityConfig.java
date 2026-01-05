@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/tours/**").permitAll()
                         .requestMatchers("/api/crm/customers/**").permitAll()
                         .requestMatchers("/api/agents/**").permitAll()
+                        .requestMatchers("/api/rental/**").permitAll()
+                        .requestMatchers("/api/payments/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

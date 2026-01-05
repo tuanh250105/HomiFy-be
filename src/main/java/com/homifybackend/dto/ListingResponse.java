@@ -1,10 +1,10 @@
 package com.homifybackend.dto;
 
-import com.homifybackend.model.PropertyType;
-import com.homifybackend.model.SaleStatus;
-
 import java.math.BigDecimal;
 import java.util.Map;
+
+import com.homifybackend.model.PropertyType;
+import com.homifybackend.model.SaleStatus;
 
 public class ListingResponse {
     
@@ -13,12 +13,12 @@ public class ListingResponse {
     private SaleStatus saleStatus;
     private PropertyType propertyType;
     
-    // Property data
-    private Map<String, Object> property;
-    private Map<String, Object> address;
-    private Map<String, Object> subtype;
+    // Property data - Changed to DTO
+    private PropertyDTO property;
+    private AddressDTO address;
+    private SubtypeDTO subtype;
     
-    // Additional data
+    // Additional data - Keep as Map for flexibility
     private Map<String, Object> rooms;
     private Map<String, Object> features;
     private Map<String, Object> ratings;
@@ -66,27 +66,27 @@ public class ListingResponse {
         this.propertyType = propertyType;
     }
     
-    public Map<String, Object> getProperty() {
+    public PropertyDTO getProperty() {
         return property;
     }
     
-    public void setProperty(Map<String, Object> property) {
+    public void setProperty(PropertyDTO property) {
         this.property = property;
     }
     
-    public Map<String, Object> getAddress() {
+    public AddressDTO getAddress() {
         return address;
     }
     
-    public void setAddress(Map<String, Object> address) {
+    public void setAddress(AddressDTO address) {
         this.address = address;
     }
     
-    public Map<String, Object> getSubtype() {
+    public SubtypeDTO getSubtype() {
         return subtype;
     }
     
-    public void setSubtype(Map<String, Object> subtype) {
+    public void setSubtype(SubtypeDTO subtype) {
         this.subtype = subtype;
     }
     

@@ -1,5 +1,7 @@
 package com.homifybackend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,6 +30,7 @@ public class SaleListing {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "property_id")
+    @JsonIgnoreProperties("saleListing")
     private Property property;
 
     @Column(name = "current_price", precision = 18, scale = 2)

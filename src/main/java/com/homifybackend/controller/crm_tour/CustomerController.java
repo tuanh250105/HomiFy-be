@@ -1,9 +1,12 @@
 package com.homifybackend.controller.crm_tour;
 
+import com.homifybackend.dto.CustomerDTO;
+import com.homifybackend.dto.AgentPropertyDTO;
+import com.homifybackend.mapper.CustomerMapper;
 import com.homifybackend.model.Customer;
-import com.homifybackend.model.Property;
 import com.homifybackend.service.crm_tour.CustomerService;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
@@ -19,32 +22,42 @@ public class CustomerController {
     }
 
     @GetMapping
-    public List<Customer> getAll() {
-        return service.getAllCustomers();
+    public List<CustomerDTO> getAll() {
+        return service.getAllCustomers()
+                .stream()
+                .map(CustomerMapper::toDTO)
+                .toList();
     }
 
     @GetMapping("/{id}/suggestions")
-    public List<Property> getSuggestions(@PathVariable Long id) {
-        return service.getSuggestedProperties(id);
+    public List<AgentPropertyDTO> getSuggestions(@PathVariable Long id) {
+        return service.getSuggestedProperties(id)
+                .stream()
+                .map(CustomerMapper::toPropertyDTO)
+                .toList();
     }
 
     @PutMapping("/{id}")
-    public Customer update(@PathVariable Long id, @RequestBody Customer customer) {
-        return service.updateCustomer(id, customer);
+    public CustomerDTO update(@PathVariable Long id, @RequestBody Customer customer) {
+        return CustomerMapper.toDTO(service.updateCustomer(id, customer));
     }
 
     @PutMapping("/{id}/favorite")
-    public Customer toggleFavorite(@PathVariable Long id, @RequestBody Map<String, Boolean> update) {
-        return service.toggleFavorite(id, update);
+    public CustomerDTO toggleFavorite(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> update) {
+        return CustomerMapper.toDTO(service.toggleFavorite(id, update));
     }
 
     @PutMapping("/{id}/status")
-    public Customer updateStatus(@PathVariable Long id, @RequestBody Map<String, String> statusUpdate) {
-        return service.updateStatus(id, statusUpdate);
+    public CustomerDTO updateStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> statusUpdate) {
+        return CustomerMapper.toDTO(service.updateStatus(id, statusUpdate));
     }
 
     @PostMapping("/{id}/contract")
-    public Customer createContract(@PathVariable Long id) {
-        return service.createContract(id);
+    public CustomerDTO createContract(@PathVariable Long id) {
+        return CustomerMapper.toDTO(service.createContract(id));
     }
 }

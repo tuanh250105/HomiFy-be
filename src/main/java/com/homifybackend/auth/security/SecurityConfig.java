@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/rental/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll()
                         .requestMatchers("/api/agent-profile/**").permitAll()
+                        .requestMatchers("/api/manage-personalinfo/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

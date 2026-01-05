@@ -15,8 +15,8 @@ public interface RentalListingReposity extends JpaRepository<RentalListing, Long
         WHERE a.latitude BETWEEN :minLat AND :maxLat
           AND a.longitude BETWEEN :minLng AND :maxLng
           AND r.rentalStatus = :status
-          AND (:minRent IS NULL OR r.monthlyRent >= :minPrice)
-          AND (:maxRent IS NULL OR r.monthlyRent <= :maxPrice)
+          AND (:minRent IS NULL OR r.monthlyRent >= :minRent)
+          AND (:maxRent IS NULL OR r.monthlyRent <= :maxRent)
           AND (:propertyType IS NULL OR p.propertyType =:propertyType)
 
     """)
@@ -25,8 +25,8 @@ public interface RentalListingReposity extends JpaRepository<RentalListing, Long
             @Param("maxLat") Double maxLat,
             @Param("minLng") Double minLng,
             @Param("maxLng") Double maxLng,
-            @Param("minRent") Double minPrice,
-            @Param("maxRent") Double maxPrice,
+            @Param("minRent") Double minRent,
+            @Param("maxRent") Double maxRent,
             @Param("status") RentalListingStatus status,
             @Param("propertyType") String propertyType
     );

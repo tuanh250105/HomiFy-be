@@ -17,7 +17,7 @@ public interface SaleListingReposity extends JpaRepository<SaleListing, Long> {
         JOIN FETCH p.address a
         WHERE a.latitude BETWEEN :minLat AND :maxLat
           AND a.longitude BETWEEN :minLng AND :maxLng
-          AND s.saleStatus = 'ACTIVE'
+          AND s.saleStatus = :status
           AND (:minPrice IS NULL OR s.currentPrice >= :minPrice)
           AND (:maxPrice IS NULL OR s.currentPrice <= :maxPrice)
           AND (:propertyType IS NULL OR p.propertyType =:propertyType)

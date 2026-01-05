@@ -2,6 +2,7 @@ package com.homifybackend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SuperBuilder
 @PrimaryKeyJoinColumn(name = "user_id")
 public class Agent extends User{
 

@@ -1,11 +1,16 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
-import lombok.Builder;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "customers")
-@Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @PrimaryKeyJoinColumn(name = "user_id")
 public class Customer extends User {
 
@@ -20,7 +25,6 @@ public class Customer extends User {
 
     private String demand;
 
-    public Customer() {}
     public String getPipelineStatus() { return pipelineStatus; }
     public void setPipelineStatus(String pipelineStatus) { this.pipelineStatus = pipelineStatus; }
     public Integer getInterestScore() { return interestScore; }

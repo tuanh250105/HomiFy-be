@@ -9,10 +9,15 @@ public class LoginRequest {
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
-    
+
     @NotBlank(message = "Password is required")
     private String password;
-    
-    private Boolean rememberMe = false;
-}
 
+    private Boolean rememberMe = false;
+
+    /**
+     * Only used by role-specific login endpoints (e.g. /login/customer, /login/agent).
+     * Values: CUSTOMER / AGENT
+     */
+    private String expectedRole;
+}

@@ -22,9 +22,12 @@ public class SurveyTaskController {
         this.surveyTaskService = surveyTaskService;
     }
 
+    // ✅ BE filter district (FE chỉ gửi param)
     @GetMapping("/opportunity-pool")
-    public List<OpportunityPoolDto> getOpportunityPool() {
-        return surveyTaskService.getOpportunityPool();
+    public List<OpportunityPoolDto> getOpportunityPool(
+            @RequestParam(required = false) String district
+    ) {
+        return surveyTaskService.getOpportunityPool(district);
     }
 
     @GetMapping("/survey-tasks")
@@ -47,9 +50,11 @@ public class SurveyTaskController {
         surveyTaskService.schedule(req.taskId(), req.scheduledAt());
     }
 
-    // ✅ Đã sửa theo yêu cầu: PATCH /api/survey-tasks/{taskId}/note
     @PatchMapping("/survey-tasks/{taskId}/note")
-    public void updateNote(@PathVariable Long taskId, @RequestBody UpdateSurveyNoteRequest req) {
+    public void updateNote(
+            @PathVariable Long taskId,
+            @RequestBody UpdateSurveyNoteRequest req
+    ) {
         surveyTaskService.updateNote(taskId, req.note());
     }
 }

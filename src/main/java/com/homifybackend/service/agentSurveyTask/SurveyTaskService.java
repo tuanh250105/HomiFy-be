@@ -34,16 +34,26 @@ public class SurveyTaskService {
     }
 
     // =========================
-    // 1) OPPORTUNITY POOL
-    // =========================
+// 1) OPPORTUNITY POOL
+// =========================
     @Transactional(readOnly = true)
-    public List<OpportunityPoolDto> getOpportunityPool() {
+    public List<OpportunityPoolDto> getOpportunityPool(String district) {
 
-        // Fix: Pass Enum directly
-        List<SellRequest> pending = sellRequestRepository.findOpportunityPoolByStatus(SellRequestStatus.PENDING);
+        List<SellRequest> pending;
+
+        if (district == null || district.isBlank() || district.equalsIgnoreCase("ALL")) {
+            pending = sellRequestRepository
+                    .findOpportunityPoolByStatus(SellRequestStatus.PENDING);
+        } else {
+            // ⚠️ yêu cầu repo có method này (bên dưới mình nói)
+            pending = sellRequestRepository
+                    .findOpportunityPoolByStatusAndDistrict(
+                            SellRequestStatus.PENDING,
+                            district
+                    );
+        }
 
         return pending.stream().map(sr -> {
-            // Address
             Long addressId = null;
             String fullAddress = "Chưa cập nhật";
             String city = "N/A";
@@ -51,29 +61,30 @@ public class SurveyTaskService {
 
             Address addr = sr.getAddress();
             if (addr != null) {
-                addressId = addr.getAddressId(); 
-                
+                addressId = addr.getAddressId();
                 String street = addr.getStreet() != null ? addr.getStreet() : "";
                 city = addr.getCity() != null ? addr.getCity() : "N/A";
                 province = addr.getProvince() != null ? addr.getProvince() : "N/A";
                 fullAddress = street.isBlank() ? city : (street + ", " + city);
             }
 
-            // Owner
             String ownerName = "Khách ẩn danh";
             Customer owner = sr.getOwner();
             if (owner != null && owner.getFullName() != null && !owner.getFullName().isBlank()) {
                 ownerName = owner.getFullName();
             }
 
-            String createdAt = sr.getCreatedAt() != null ? sr.getCreatedAt().format(FMT) : null;
-            
-            // Fix: Convert Enum to String using .name()
-            String statusStr = sr.getStatus() != null ? sr.getStatus().name() : "PENDING";
+            String createdAt = sr.getCreatedAt() != null
+                    ? sr.getCreatedAt().format(FMT)
+                    : null;
+
+            String statusStr = sr.getStatus() != null
+                    ? sr.getStatus().name()
+                    : "PENDING";
 
             return new OpportunityPoolDto(
                     sr.getId(),
-                    statusStr, 
+                    statusStr,
                     createdAt,
                     addressId,
                     sr.getEstBeds() != null ? sr.getEstBeds() : 0,
@@ -86,6 +97,7 @@ public class SurveyTaskService {
             );
         }).toList();
     }
+
 
     // =========================
     // 2) MY TASKS
@@ -125,7 +137,7 @@ public class SurveyTaskService {
                     beds,
                     baths,
                     area,
-                    task.getNote() // ✅ Đã thêm note vào DTO
+                    task.getNote()
             );
         }).toList();
     }

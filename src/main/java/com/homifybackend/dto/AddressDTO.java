@@ -10,8 +10,8 @@ public record AddressDTO(
          Double latitude,
          Double longitude
 )
-    { public AddressDTO(com.homifybackend.model.Address address) {
-        this(
+    { public static AddressDTO from(Address address) {
+        return new AddressDTO(
                 address.getAddressId(),
                 address.getCity(),
                 address.getProvince(),

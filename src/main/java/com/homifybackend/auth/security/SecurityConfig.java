@@ -52,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/account/saved-homes/**").permitAll()
                         .requestMatchers("/api/agent/profile/**").permitAll()
                         .requestMatchers("/api/crm/customers/**").permitAll()
+                        .requestMatchers("/api/zestimate/health/**").permitAll()
+                        .requestMatchers("/api/agentlistings/**").permitAll()
+                        .requestMatchers("/api/customer-tours/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

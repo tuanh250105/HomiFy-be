@@ -14,7 +14,7 @@ public record PropertyCoreDTO(
         AddressDTO address,
         Integer yearBuilt,
         String description,
-        TransportRating transportRating,
-        ApplianceRating applianceRating
+        TransportRatingDTO transportRating,
+        ApplianceRatingDTO applianceRating
 ) {}
 

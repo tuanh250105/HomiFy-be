@@ -68,7 +68,7 @@ public class AgentListingController {
      * GET /api/listings
      * Lấy danh sách tất cả listings (có filter)
      */
-    @GetMapping("")
+    @GetMapping
     public ResponseEntity<List<ListingResponse>> getAllListings(
         @RequestParam(required = false) Long agentId,
         @RequestParam(required = false) Long ownerId,
@@ -77,7 +77,7 @@ public class AgentListingController {
         List<ListingResponse> listings = agentListingService.getAllListings(agentId, ownerId, status);
         return ResponseEntity.ok(listings);
     }
-    
+
     /**
      * GET /api/listings/{id}
      * Lấy lại data để edit

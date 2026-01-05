@@ -93,11 +93,11 @@ public class ListingDetailMapper {
                 property.getBeds(),
                 property.getBaths(),
                 property.getFloors(),
-                new AddressDTO(property.getAddress()),
+                AddressDTO.from(property.getAddress()),
                 property.getYearBuilt(),
                 property.getDescription(),
-                property.getTransportRating(),
-                property.getApplianceRating()
+                TransportRatingDTO.from(property.getTransportRating()),
+                ApplianceRatingDTO.from(property.getApplianceRating())
         );
     }
 

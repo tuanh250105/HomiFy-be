@@ -7,6 +7,7 @@ import com.homifybackend.manageRentals.repository.CustomerRepository;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;
 import com.homifybackend.model.RentalListingImage;
+import com.homifybackend.model.RentalListingStatus; // ← THÊM IMPORT NÀY
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +41,9 @@ public class RentalService {
 
   // ADD
   public RentalPropertyDTO addProperty(RentalPropertyDTO dto) {
-    Property property = new Property();
+    Property property = rentalPropertyMapper.createEntityFromDto(dto);
 
-    // Fix: Set owner entity đúng cách
+    // Set owner entity
     Customer owner = customerRepository.findById(CURRENT_OWNER_ID)
         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy owner với ID: " + CURRENT_OWNER_ID));
     property.setOwner(owner);
@@ -50,17 +51,17 @@ public class RentalService {
     // Map DTO → entity
     rentalPropertyMapper.applyDtoToEntity(dto, property);
 
-    // ====== FIX RELATIONS ======
+    // Fix relations
     if (property.getRentalListing() != null) {
       property.getRentalListing().setProperty(property);
 
-      // SỬA: Dùng for thường thay vì lambda để tránh lỗi effectively final
       if (property.getRentalListing().getImages() != null) {
         for (RentalListingImage img : property.getRentalListing().getImages()) {
           img.setRentalListing(property.getRentalListing());
         }
       }
     }
+
     property = propertyRepository.save(property);
     return rentalPropertyMapper.toDto(property);
   }
@@ -72,7 +73,6 @@ public class RentalService {
 
     rentalPropertyMapper.applyDtoToEntity(dto, property);
 
-    // SỬA: Cũng dùng for thường ở đây
     if (property.getRentalListing() != null && property.getRentalListing().getImages() != null) {
       for (RentalListingImage img : property.getRentalListing().getImages()) {
         img.setRentalListing(property.getRentalListing());
@@ -83,23 +83,27 @@ public class RentalService {
     return rentalPropertyMapper.toDto(property);
   }
 
-  // Các method còn lại giữ nguyên
+  // DEACTIVATE
   public boolean deactivateProperty(Long id) {
     Property p = propertyRepository.findById(id).orElse(null);
     if (p == null || p.getRentalListing() == null) return false;
-    p.getRentalListing().setListingStatus("INACTIVE");
+
+    p.getRentalListing().setRentalStatus(RentalListingStatus.INACTIVE); // ← SỬA Ở ĐÂY
     propertyRepository.save(p);
     return true;
   }
 
+  // ACTIVATE
   public boolean activateProperty(Long id) {
     Property p = propertyRepository.findById(id).orElse(null);
     if (p == null || p.getRentalListing() == null) return false;
-    p.getRentalListing().setListingStatus("ACTIVE");
+
+    p.getRentalListing().setRentalStatus(RentalListingStatus.ACTIVE);
     propertyRepository.save(p);
     return true;
   }
 
+  // DELETE
   public boolean deleteProperty(Long id) {
     if (!propertyRepository.existsById(id)) return false;
     propertyRepository.deleteById(id);

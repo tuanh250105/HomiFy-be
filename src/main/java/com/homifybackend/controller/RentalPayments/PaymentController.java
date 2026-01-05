@@ -1,5 +1,6 @@
 package com.homifybackend.manageRentalPayments.controller;
 
+import com.homifybackend.model.BankTransactionDirection;
 import com.homifybackend.manageRentalPayments.dto.RentalPaymentScheduleDTO;
 import com.homifybackend.manageRentalPayments.service.RentalPaymentScheduleService;
 import com.homifybackend.model.BankTransaction;
@@ -49,7 +50,16 @@ public class PaymentController {
         BankTransaction txn = new BankTransaction();
         txn.setTxnDate(LocalDate.parse(record.get("txn_date")));
         txn.setAmount(new BigDecimal(record.get("amount")));
-        txn.setDirection(record.get("direction"));
+        String rawDir = record.get("direction");
+        BankTransactionDirection dir;
+
+        try {
+          dir = BankTransactionDirection.valueOf(rawDir.trim().toUpperCase());
+        } catch (Exception ex) {
+          // fallback an toàn nếu file csv ghi lạ
+          dir = BankTransactionDirection.CREDIT;
+        }
+        txn.setDirection(dir);
         txn.setDescription(record.get("description"));
         txn.setReference(record.get("reference"));
         txns.add(txn);

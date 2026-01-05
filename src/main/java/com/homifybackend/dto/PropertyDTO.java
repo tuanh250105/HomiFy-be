@@ -20,4 +20,5 @@ public class PropertyDTO {
   private Long transportRatingId;
   private Long applianceRatingId;
   private LocalDateTime createdAt;
+  private String propertyType;
 }

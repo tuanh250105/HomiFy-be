@@ -18,7 +18,7 @@ public class RentalPaymentScheduleMapper {
     dto.setPeriodMonth(entity.getPeriodMonth());
     dto.setDueDate(entity.getDueDate());
     dto.setAmountDue(entity.getAmountDue());
-    dto.setStatus(entity.getStatus());
+    dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
     dto.setMatchedTxnId(entity.getMatchedTxnId());
     dto.setMatchedAt(entity.getMatchedAt());
     dto.setNote(entity.getNote());

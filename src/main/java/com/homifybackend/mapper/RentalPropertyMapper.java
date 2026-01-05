@@ -1,11 +1,11 @@
 package com.homifybackend.manageRentals.mapper;
 
 import com.homifybackend.manageRentals.dto.*;
-import com.homifybackend.model.*;
 import com.homifybackend.manageRentals.repository.RentalContractRepository;
+import com.homifybackend.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,30 +40,36 @@ public class RentalPropertyMapper {
     if (property.getRentalListing() != null) {
       RentalListing rl = property.getRentalListing();
       dto.setRentalListing(mapRentalListing(rl));
-
       dto.setRentalListingImages(
           rl.getImages().stream()
               .map(this::mapImage)
               .collect(Collectors.toList())
       );
 
-      // Chỉ khi RENTED mới query thêm contract + tenant
-      if ("RENTED".equals(rl.getListingStatus())) {
-        rentalContractRepository.findByRentalListing_Id(rl.getId())
-            .ifPresent(contract -> {
-              dto.setRentalContract(mapRentalContract(contract));
-              if (contract.getTenant() != null) {
-                dto.setTenant(userMapper.toDto(contract.getTenant()));
-              }
-            });
+      // Chỉ khi RENTED mới query contract + tenant
+      if (rl.getRentalStatus() == RentalListingStatus.RENTED) {
+        if (rl.getProperty() != null && rl.getProperty().getPropertyId() != null) {
+          rentalContractRepository.findByRentalListing_Id(rl.getId())
+              .ifPresent(contract -> {
+                dto.setRentalContract(mapRentalContract(contract));
+                if (contract.getTenant() != null) {
+                  dto.setTenant(userMapper.toDto(contract.getTenant()));
+                }
+              });
+        }
       }
     }
 
-    // SUBTYPE MAPPING (thay thế phần set null cũ)
-    dto.setApartment(mapApartment(property.getApartment()));
-    dto.setTownHouse(mapTownHouse(property.getTownHouse()));
-    dto.setSingleHouse(mapSingleHouse(property.getSingleHouse()));
-    dto.setVilla(mapVilla(property.getVilla()));
+    // SUBTYPE MAPPING: dùng instanceof vì Property là superclass (JOINED inheritance)
+    if (property instanceof Apartment) {
+      dto.setApartment(mapApartment((Apartment) property));
+    } else if (property instanceof TownHouse) {
+      dto.setTownHouse(mapTownHouse((TownHouse) property));
+    } else if (property instanceof SingleHouse) {
+      dto.setSingleHouse(mapSingleHouse((SingleHouse) property));
+    } else if (property instanceof Villa) {
+      dto.setVilla(mapVilla((Villa) property));
+    }
 
     return dto;
   }
@@ -88,8 +94,8 @@ public class RentalPropertyMapper {
     if (p == null) return null;
     PropertyDTO d = new PropertyDTO();
     d.setPropertyId(p.getPropertyId());
-    d.setOwnerId(p.getOwner().getUserId());
-    d.setAddressId(p.getAddress().getAddressId());
+    d.setOwnerId(p.getOwner() != null ? p.getOwner().getUserId() : null);
+    d.setAddressId(p.getAddress() != null ? p.getAddress().getAddressId() : null);
     d.setYearBuilt(p.getYearBuilt());
     d.setFloors(p.getFloors());
     d.setBeds(p.getBeds());
@@ -99,7 +105,17 @@ public class RentalPropertyMapper {
     d.setTransportRatingId(p.getTransportRating() != null ? p.getTransportRating().getRatingId() : null);
     d.setApplianceRatingId(p.getApplianceRating() != null ? p.getApplianceRating().getRatingId() : null);
     d.setCreatedAt(p.getCreatedAt());
+    // Auto-populate propertyType từ actual entity class
+    d.setPropertyType(getPropertyType(p));
     return d;
+  }
+
+  private String getPropertyType(Property p) {
+    if (p instanceof Apartment) return "APARTMENT";
+    if (p instanceof TownHouse) return "TOWN_HOUSE";
+    if (p instanceof SingleHouse) return "SINGLE_HOUSE";
+    if (p instanceof Villa) return "VILLA";
+    return null;
   }
 
   private RentalListingDTO mapRentalListing(RentalListing rl) {
@@ -114,13 +130,12 @@ public class RentalPropertyMapper {
     d.setLeaseTermMonths(rl.getLeaseTermMonths());
     d.setPetAllowed(rl.getPetAllowed());
     d.setUtilitiesIncluded(rl.getUtilitiesIncluded());
-    d.setListingStatus(rl.getListingStatus());
+    d.setListingStatus(rl.getRentalStatus() != null ? rl.getRentalStatus().name() : null);
     d.setMarketingDescription(rl.getMarketingDescription());
     d.setDateListed(rl.getDateListed());
     d.setDateRented(rl.getDateRented());
     return d;
   }
-
   private RentalListingImageDTO mapImage(RentalListingImage img) {
     if (img == null) return null;
     RentalListingImageDTO d = new RentalListingImageDTO();
@@ -198,8 +213,7 @@ public class RentalPropertyMapper {
     return d;
   }
 
-  // ==================== Subtype mapping methods ====================
-
+  // Subtype mapping
   private ApartmentDTO mapApartment(Apartment a) {
     if (a == null) return null;
     ApartmentDTO d = new ApartmentDTO();
@@ -264,32 +278,20 @@ public class RentalPropertyMapper {
     d.setServiceArea(v.getServiceArea());
     return d;
   }
-  // ==================== MỚI THÊM: MAPPER NGƯỢC DTO → ENTITY ====================
 
-  /**
-   * Apply dữ liệu từ DTO vào entity hiện có (dùng cho update)
-   */
-// ==================== DTO -> ENTITY (ADD/UPDATE) ====================
+  // ==================== DTO -> ENTITY (ADD/UPDATE) ====================
+
   public void applyDtoToEntity(RentalPropertyDTO dto, Property entity) {
     if (dto == null || entity == null) return;
 
-    // =========================================================
-    // STEP 1: Address
-    // =========================================================
+    // Address
     if (dto.getAddress() != null) {
       AddressDTO ad = dto.getAddress();
       Address addr = entity.getAddress();
-
-      // Nếu ADD mới hoặc entity chưa có address
       if (addr == null) {
         addr = new Address();
-        // nếu Address có @GeneratedValue thì KHÔNG nên set id
-        // nếu Address id do client gửi (hiếm) thì mới set:
-        if (ad.getAddressId() != null) addr.setAddressId(ad.getAddressId());
         entity.setAddress(addr);
       }
-
-      // Update fields (chỉ set khi != null để tránh overwrite bằng null)
       if (ad.getStreet() != null) addr.setStreet(ad.getStreet());
       if (ad.getCity() != null) addr.setCity(ad.getCity());
       if (ad.getProvince() != null) addr.setProvince(ad.getProvince());
@@ -299,31 +301,21 @@ public class RentalPropertyMapper {
       if (ad.getLongitude() != null) addr.setLongitude(ad.getLongitude());
     }
 
-    // =========================================================
-    // STEP 2 + STEP 5: Property core fields (yearBuilt, floors, desc...)
-    // =========================================================
+    // Property core
     if (dto.getProperty() != null) {
       PropertyDTO p = dto.getProperty();
-
       if (p.getYearBuilt() != null) entity.setYearBuilt(p.getYearBuilt());
       if (p.getFloors() != null) entity.setFloors(p.getFloors());
       if (p.getBeds() != null) entity.setBeds(p.getBeds());
       if (p.getBaths() != null) entity.setBaths(p.getBaths());
       if (p.getArea() != null) entity.setArea(p.getArea());
       if (p.getDescription() != null) entity.setDescription(p.getDescription());
-
-      // owner / addressId / ratingId: thường không update ở mapper (quan hệ DB)
-      // - Owner: nên set trong Service khi ADD (CURRENT_OWNER_ID)
-      // - transportRatingId/applianceRatingId: nếu bạn muốn update thì phải repo.findById rồi set entity.setTransportRating(...)
     }
 
-    // =========================================================
-    // STEP 3: RentalListing (monthlyRent, deposit, availableFrom...)
-    // =========================================================
+    // RentalListing
     if (dto.getRentalListing() != null) {
       RentalListingDTO rld = dto.getRentalListing();
       RentalListing rl = entity.getRentalListing();
-
       if (rl == null) {
         rl = new RentalListing();
         rl.setProperty(entity);
@@ -331,7 +323,6 @@ public class RentalPropertyMapper {
         if (rld.getId() != null) rl.setId(rld.getId());
         entity.setRentalListing(rl);
       }
-
       if (rld.getMonthlyRent() != null) rl.setMonthlyRent(rld.getMonthlyRent());
       if (rld.getDepositAmount() != null) rl.setDepositAmount(rld.getDepositAmount());
       if (rld.getMaintenanceFee() != null) rl.setMaintenanceFee(rld.getMaintenanceFee());
@@ -340,67 +331,49 @@ public class RentalPropertyMapper {
       if (rld.getPetAllowed() != null) rl.setPetAllowed(rld.getPetAllowed());
       if (rld.getUtilitiesIncluded() != null) rl.setUtilitiesIncluded(rld.getUtilitiesIncluded());
       if (rld.getMarketingDescription() != null) rl.setMarketingDescription(rld.getMarketingDescription());
-
       if (rld.getListingStatus() != null) {
-        rl.setListingStatus(rld.getListingStatus().toUpperCase());
+        rl.setRentalStatus(RentalListingStatus.valueOf(rld.getListingStatus().toUpperCase()));
       }
-
-      // dateListed/dateRented: thường server tự set theo logic business
-      // nếu muốn cho update thì mở:
       if (rld.getDateListed() != null) rl.setDateListed(rld.getDateListed());
       if (rld.getDateRented() != null) rl.setDateRented(rld.getDateRented());
     }
 
-    // =========================================================
-    // STEP 5 (images): rentalListingImages (sync list)
-    // =========================================================
+    // Images
     if (dto.getRentalListingImages() != null) {
-      // cần rentalListing tồn tại để gắn FK
       RentalListing rl = entity.getRentalListing();
       if (rl == null) {
         rl = new RentalListing();
         rl.setProperty(entity);
         entity.setRentalListing(rl);
       }
-
-      // orphanRemoval=true => clear rồi add lại là an toàn nhất
       rl.getImages().clear();
-
       for (RentalListingImageDTO imgDto : dto.getRentalListingImages()) {
         if (imgDto == null) continue;
-
         RentalListingImage img = new RentalListingImage();
         if (imgDto.getId() != null) img.setId(imgDto.getId());
         img.setRentalListing(rl);
-
         if (imgDto.getUrl() != null) img.setUrl(imgDto.getUrl());
         if (imgDto.getIsPrimary() != null) img.setIsPrimary(imgDto.getIsPrimary());
-
         rl.getImages().add(img);
       }
     }
 
-    // =========================================================
-    // STEP 4: Features / Amenities blocks (security/outdoor/entertainment/applianceRating)
-    // =========================================================
-
+    // Features & Amenities (giữ nguyên logic của bạn)
     if (dto.getSecurityFeatures() == null) {
-      // FE không gửi block => hiểu là không chọn gì => xóa block cho sạch
-      entity.setSecurityFeatures(null); // orphanRemoval => delete record
+      entity.setSecurityFeatures(null);
     } else {
       SecurityFeaturesDTO sfd = dto.getSecurityFeatures();
       SecurityFeatures sf = entity.getSecurityFeatures();
       if (sf == null) {
         sf = new SecurityFeatures();
-        sf.setProperty(entity);     // @MapsId cần setProperty
+        sf.setProperty(entity);
         entity.setSecurityFeatures(sf);
       }
-      // overwrite đầy đủ (null coi như false)
       sf.setHasSecurityDoor(Boolean.TRUE.equals(sfd.getHasSecurityDoor()));
       sf.setHasCctv(Boolean.TRUE.equals(sfd.getHasCctv()));
     }
 
-    // --- OutdoorFeatures ---
+    // Outdoor, Entertainment, ApplianceRating giữ nguyên như code cũ của bạn
     if (dto.getOutdoorFeatures() == null) {
       entity.setOutdoorFeatures(null);
     } else {
@@ -415,7 +388,6 @@ public class RentalPropertyMapper {
       of.setHasChildrensPlayground(Boolean.TRUE.equals(ofd.getHasChildrensPlayground()));
     }
 
-    // --- EntertainmentFeatures ---
     if (dto.getEntertainmentFeatures() == null) {
       entity.setEntertainmentFeatures(null);
     } else {
@@ -431,9 +403,6 @@ public class RentalPropertyMapper {
       ef.setHasGameRoom(Boolean.TRUE.equals(efd.getHasGameRoom()));
     }
 
-    // --- ApplianceRating (đang là ManyToOne) ---
-    // Nếu FE dùng nó như amenities block, bạn cần overwrite booleans.
-    // LƯU Ý: nếu 1 ApplianceRating bị share giữa nhiều property thì sẽ ảnh hưởng chéo (nhưng thường bạn không share).
     if (dto.getApplianceRating() != null && entity.getApplianceRating() != null) {
       ApplianceRatingDTO ard = dto.getApplianceRating();
       ApplianceRating ar = entity.getApplianceRating();
@@ -444,7 +413,6 @@ public class RentalPropertyMapper {
       ar.setRefrigerator(Boolean.TRUE.equals(ard.getRefrigerator()));
       ar.setWasher(Boolean.TRUE.equals(ard.getWasher()));
     } else if (dto.getApplianceRating() == null && entity.getApplianceRating() != null) {
-      // FE không gửi appliance block => reset hết về false (để “bỏ tick” có hiệu lực)
       ApplianceRating ar = entity.getApplianceRating();
       ar.setDishwasher(false);
       ar.setDryer(false);
@@ -461,77 +429,19 @@ public class RentalPropertyMapper {
 
     // Nếu client gửi apartment => set apartment + clear others
     if (dto.getApartment() != null) {
-      ensureOnlyApartment(entity);
       applyApartment(dto.getApartment(), entity);
     } else if (dto.getTownHouse() != null) {
-      ensureOnlyTownHouse(entity);
       applyTownHouse(dto.getTownHouse(), entity);
     } else if (dto.getSingleHouse() != null) {
-      ensureOnlySingleHouse(entity);
       applySingleHouse(dto.getSingleHouse(), entity);
     } else if (dto.getVilla() != null) {
-      ensureOnlyVilla(entity);
       applyVilla(dto.getVilla(), entity);
     }
-
-    // transportRating: @ManyToOne nên thường read-only trong update
-    // nếu muốn update phải fetch TransportRating theo id và set vào property
   }
-
-
-// ==================== Helpers: subtype ensure & apply ====================
-
-  private void ensureOnlyApartment(Property p) {
-    // clear others (orphanRemoval=true => delete record)
-    p.setTownHouse(null);
-    p.setSingleHouse(null);
-    p.setVilla(null);
-
-    if (p.getApartment() == null) {
-      Apartment a = new Apartment();
-      a.setProperty(p);
-      p.setApartment(a);
-    }
-  }
-
-  private void ensureOnlyTownHouse(Property p) {
-    p.setApartment(null);
-    p.setSingleHouse(null);
-    p.setVilla(null);
-
-    if (p.getTownHouse() == null) {
-      TownHouse t = new TownHouse();
-      t.setProperty(p);
-      p.setTownHouse(t);
-    }
-  }
-
-  private void ensureOnlySingleHouse(Property p) {
-    p.setApartment(null);
-    p.setTownHouse(null);
-    p.setVilla(null);
-
-    if (p.getSingleHouse() == null) {
-      SingleHouse s = new SingleHouse();
-      s.setProperty(p);
-      p.setSingleHouse(s);
-    }
-  }
-
-  private void ensureOnlyVilla(Property p) {
-    p.setApartment(null);
-    p.setTownHouse(null);
-    p.setSingleHouse(null);
-
-    if (p.getVilla() == null) {
-      Villa v = new Villa();
-      v.setProperty(p);
-      p.setVilla(v);
-    }
-  }
-
+  // Helpers subtype apply
   private void applyApartment(ApartmentDTO d, Property p) {
-    Apartment a = p.getApartment();
+    if (!(p instanceof Apartment)) return;
+    Apartment a = (Apartment) p;
     if (d.getUsableArea() != null) a.setUsableArea(d.getUsableArea());
     if (d.getMaintenanceFee() != null) a.setMaintenanceFee(d.getMaintenanceFee());
     if (d.getLevel() != null) a.setLevel(d.getLevel());
@@ -539,13 +449,12 @@ public class RentalPropertyMapper {
     if (d.getSharedFacilities() != null) a.setSharedFacilities(d.getSharedFacilities());
     if (d.getTotalBuildingFloors() != null) a.setTotalBuildingFloors(d.getTotalBuildingFloors());
     if (d.getBalcony() != null) a.setBalcony(d.getBalcony());
-
-    // petAllowed trong subtype: nếu schema có thì vẫn map (nhưng FE bạn muốn chỉ dùng rentalListing.petAllowed)
     if (d.getPetAllowed() != null) a.setPetAllowed(d.getPetAllowed());
   }
 
   private void applyTownHouse(TownHouseDTO d, Property p) {
-    TownHouse t = p.getTownHouse();
+    if (!(p instanceof TownHouse)) return;
+    TownHouse t = (TownHouse) p;
     if (d.getLandArea() != null) t.setLandArea(d.getLandArea());
     if (d.getNumberOfFloors() != null) t.setNumberOfFloors(d.getNumberOfFloors());
     if (d.getCornerLot() != null) t.setCornerLot(d.getCornerLot());
@@ -562,7 +471,8 @@ public class RentalPropertyMapper {
   }
 
   private void applySingleHouse(SingleHouseDTO d, Property p) {
-    SingleHouse s = p.getSingleHouse();
+    if (!(p instanceof SingleHouse)) return;
+    SingleHouse s = (SingleHouse) p;
     if (d.getLandArea() != null) s.setLandArea(d.getLandArea());
     if (d.getBackyardArea() != null) s.setBackyardArea(d.getBackyardArea());
     if (d.getFrontYardArea() != null) s.setFrontYardArea(d.getFrontYardArea());
@@ -571,7 +481,8 @@ public class RentalPropertyMapper {
   }
 
   private void applyVilla(VillaDTO d, Property p) {
-    Villa v = p.getVilla();
+    if (!(p instanceof Villa)) return;
+    Villa v = (Villa) p;
     if (d.getLotArea() != null) v.setLotArea(d.getLotArea());
     if (d.getBackyardArea() != null) v.setBackyardArea(d.getBackyardArea());
     if (d.getFrontYardArea() != null) v.setFrontYardArea(d.getFrontYardArea());
@@ -583,5 +494,16 @@ public class RentalPropertyMapper {
     if (d.getViewType() != null) v.setViewType(d.getViewType());
     if (d.getSmartHomeLevel() != null) v.setSmartHomeLevel(d.getSmartHomeLevel());
     if (d.getServiceArea() != null) v.setServiceArea(d.getServiceArea());
+  }
+
+  public Property createEntityFromDto(RentalPropertyDTO dto) {
+    if (dto == null) return new Property();
+
+    if (dto.getApartment() != null) return new Apartment();
+    if (dto.getTownHouse() != null) return new TownHouse();
+    if (dto.getSingleHouse() != null) return new SingleHouse();
+    if (dto.getVilla() != null) return new Villa();
+
+    return new Property();
   }
 }

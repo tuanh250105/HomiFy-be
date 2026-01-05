@@ -1,5 +1,6 @@
 package com.homifybackend.manageRentalPayments.service;
 
+import com.homifybackend.model.RentalPaymentScheduleStatus;
 import com.homifybackend.manageRentalPayments.dto.RentalPaymentScheduleDTO;
 import com.homifybackend.manageRentalPayments.mapper.RentalPaymentScheduleMapper;
 import com.homifybackend.manageRentalPayments.repository.BankTransactionRepository;
@@ -45,8 +46,8 @@ public class RentalPaymentScheduleService {
       schedule.setRentalContractId(contract.getId());
       schedule.setPeriodMonth(current);
       schedule.setDueDate(dueDate);
-      schedule.setAmountDue(BigDecimal.valueOf(contract.getMonthlyRent()));
-      schedule.setStatus("PENDING");
+      schedule.setAmountDue(contract.getMonthlyRent());
+      schedule.setStatus(RentalPaymentScheduleStatus.PENDING);
 
       schedules.add(schedule);
       current = current.plusMonths(1);
@@ -64,8 +65,8 @@ public class RentalPaymentScheduleService {
     List<RentalPaymentScheduleDTO> dtos = new ArrayList<>();
 
     for (RentalPaymentSchedule entity : entities) {
-      if ("PENDING".equals(entity.getStatus()) && entity.getDueDate().isBefore(today)) {
-        entity.setStatus("OVERDUE");
+      if (entity.getStatus() == RentalPaymentScheduleStatus.PENDING && entity.getDueDate().isBefore(today)) {
+        entity.setStatus(RentalPaymentScheduleStatus.OVERDUE);
         needUpdate.add(entity);
       }
       dtos.add(mapper.toDTO(entity));
@@ -90,7 +91,7 @@ public class RentalPaymentScheduleService {
 
       schedule.setMatchedTxnId(txnId);
       schedule.setMatchedAt(LocalDateTime.now());
-      schedule.setStatus("PAID");
+      schedule.setStatus(RentalPaymentScheduleStatus.PAID);
 
       scheduleRepository.save(schedule);
     } else {
@@ -104,41 +105,36 @@ public class RentalPaymentScheduleService {
         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy schedule"));
 
     LocalDate today = LocalDate.now();
-    String newStatus = schedule.getDueDate().isBefore(today) ? "OVERDUE" : "PENDING";
-
+    RentalPaymentScheduleStatus newStatus =
+        schedule.getDueDate().isBefore(today) ? RentalPaymentScheduleStatus.OVERDUE : RentalPaymentScheduleStatus.PENDING;
     schedule.setMatchedTxnId(null);
     schedule.setMatchedAt(null);
     schedule.setStatus(newStatus);
-
     scheduleRepository.save(schedule);
   }
 
-  // ✅ update note (cho phép set null/blank để xóa note nếu bạn muốn)
   @Transactional
   public RentalPaymentScheduleDTO updateSchedule(Long scheduleId, String note) {
     RentalPaymentSchedule schedule = scheduleRepository.findById(scheduleId)
         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy schedule"));
 
-    schedule.setNote(note); // set luôn, không chặn blank
+    schedule.setNote(note);
     scheduleRepository.save(schedule);
 
-    // reload details (nếu cần), còn đơn giản thì map trực tiếp
     return mapper.toDTO(schedule);
   }
 
-  // New method: Mark as paid manually (set status=PAID, matchedAt=dueDate at 00:00, no txnId)
   @Transactional
   public void markAsPaid(Long scheduleId) {
     RentalPaymentSchedule schedule = scheduleRepository.findById(scheduleId)
         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy schedule"));
 
-    if ("PAID".equals(schedule.getStatus())) {
+    if (schedule.getStatus() == RentalPaymentScheduleStatus.PAID) {
       throw new IllegalArgumentException("Schedule đã được thanh toán");
     }
+    schedule.setStatus(RentalPaymentScheduleStatus.PAID);
 
-    schedule.setStatus("PAID");
-    schedule.setMatchedAt(schedule.getDueDate().atStartOfDay());  // Set "ngày trả" = dueDate at 00:00
-    // Không set matchedTxnId vì là mark thủ công
+    schedule.setMatchedAt(schedule.getDueDate().atStartOfDay());
 
     scheduleRepository.save(schedule);
   }

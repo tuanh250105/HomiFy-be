@@ -1,6 +1,7 @@
 package com.homifybackend.manageRentals.dto;
 
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -11,8 +12,8 @@ public class RentalContractDTO {
   private Long id;
   private Long rentalListingId;
   private Long tenantId;
-  private Double monthlyRent;      // DB: monthly_rent
-  private Double depositPaid;      // DB: deposit_paid
+  private BigDecimal monthlyRent;      // DB: monthly_rent
+  private BigDecimal depositPaid;      // DB: deposit_paid
   private LocalDate startDate;
   private LocalDate endDate;
   private LocalDate signedDate;    // DB: signed_date

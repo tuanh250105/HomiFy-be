@@ -21,10 +21,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
       "LEFT JOIN FETCH p.entertainmentFeatures " +
       "LEFT JOIN FETCH p.rentalListing rl " +
       "LEFT JOIN FETCH rl.images " +
-      "LEFT JOIN FETCH Apartment apt ON apt.property.propertyId = p.propertyId " +   // THÊM
-      "LEFT JOIN FETCH TownHouse th ON th.property.propertyId = p.propertyId " +     // THÊM
-      "LEFT JOIN FETCH SingleHouse sh ON sh.property.propertyId = p.propertyId " +   // THÊM
-      "LEFT JOIN FETCH Villa v ON v.property.propertyId = p.propertyId " +           // THÊM
+      // subclass-specific joins removed — inheritance mapping will populate subtype fields
       "WHERE p.owner.userId = :ownerId " +
       "ORDER BY p.createdAt DESC")
   List<Property> findAllByOwnerIdWithFullRelations(@Param("ownerId") Long ownerId);
@@ -38,10 +35,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
       "LEFT JOIN FETCH p.entertainmentFeatures " +
       "LEFT JOIN FETCH p.rentalListing rl " +
       "LEFT JOIN FETCH rl.images " +
-      "LEFT JOIN FETCH Apartment apt ON apt.property.propertyId = p.propertyId " +
-      "LEFT JOIN FETCH TownHouse th ON th.property.propertyId = p.propertyId " +
-      "LEFT JOIN FETCH SingleHouse sh ON sh.property.propertyId = p.propertyId " +
-      "LEFT JOIN FETCH Villa v ON v.property.propertyId = p.propertyId " +
+      // subclass-specific joins removed — inheritance mapping will populate subtype fields
       "WHERE p.propertyId = :id")
   Optional<Property> findByIdWithFullRelations(@Param("id") Long id);
 }

@@ -9,17 +9,8 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Apartment {
-
-  @Id
-  @Column(name = "property_id")
-  private Long propertyId;
-
-  @OneToOne(fetch = FetchType.LAZY)
-  @MapsId
-  @JoinColumn(name = "property_id")
-  private Property property;
-
+@DiscriminatorValue("APARTMENT")
+public class Apartment  extends Property{
   @Column(name = "usable_area")
   private Double usableArea;
 

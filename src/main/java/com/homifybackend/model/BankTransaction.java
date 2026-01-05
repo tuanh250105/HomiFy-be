@@ -1,13 +1,21 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "bank_transactions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
 public class BankTransaction {
 
   @Id
@@ -21,75 +29,17 @@ public class BankTransaction {
   @Column(nullable = false, precision = 18, scale = 2)
   private BigDecimal amount;
 
+  @Enumerated(EnumType.STRING)
   @Column(length = 10)
-  private String direction = "CREDIT";
+  private BankTransactionDirection direction = BankTransactionDirection.CREDIT;
 
+  @Column(columnDefinition = "TEXT")
   private String description;
 
+  @Column(length = 100)
   private String reference;
 
   @CreationTimestamp
-  @Column(name = "created_at")
+  @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
-
-  // Constructor rỗng
-  public BankTransaction() {
-  }
-
-  // Getters and Setters
-  public Long getTxnId() {
-    return txnId;
-  }
-
-  public void setTxnId(Long txnId) {
-    this.txnId = txnId;
-  }
-
-  public LocalDate getTxnDate() {
-    return txnDate;
-  }
-
-  public void setTxnDate(LocalDate txnDate) {
-    this.txnDate = txnDate;
-  }
-
-  public BigDecimal getAmount() {
-    return amount;
-  }
-
-  public void setAmount(BigDecimal amount) {
-    this.amount = amount;
-  }
-
-  public String getDirection() {
-    return direction;
-  }
-
-  public void setDirection(String direction) {
-    this.direction = direction;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getReference() {
-    return reference;
-  }
-
-  public void setReference(String reference) {
-    this.reference = reference;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
 }

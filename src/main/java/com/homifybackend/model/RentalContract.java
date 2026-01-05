@@ -1,6 +1,8 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -20,10 +22,10 @@ public class RentalContract {
   private Customer tenant;
 
   @Column(name = "monthly_rent")
-  private Double monthlyRent;
+  private BigDecimal monthlyRent;
 
   @Column(name = "deposit_paid")
-  private Double depositPaid;
+  private BigDecimal depositPaid;
 
   @Column(name = "start_date")
   private LocalDate startDate;
@@ -70,19 +72,19 @@ public class RentalContract {
     this.tenant = tenant;
   }
 
-  public Double getMonthlyRent() {
+  public BigDecimal getMonthlyRent() {
     return monthlyRent;
   }
 
-  public void setMonthlyRent(Double monthlyRent) {
+  public void setMonthlyRent(BigDecimal monthlyRent) {
     this.monthlyRent = monthlyRent;
   }
 
-  public Double getDepositPaid() {
+  public BigDecimal getDepositPaid() {
     return depositPaid;
   }
 
-  public void setDepositPaid(Double depositPaid) {
+  public void setDepositPaid(BigDecimal depositPaid) {
     this.depositPaid = depositPaid;
   }
 
@@ -132,6 +134,6 @@ public class RentalContract {
   }
 
   public Long getRentalListingId() {
-    return rentalListing != null ? rentalListing.getId() : null;
+    return rentalListing != null ? rentalListing.getProperty().getPropertyId() : null;
   }
 }

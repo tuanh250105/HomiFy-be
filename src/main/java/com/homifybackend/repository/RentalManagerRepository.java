@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PropertyRepository extends JpaRepository<Property, Long> {
+public interface RentalManagerRepository extends JpaRepository<Property, Long> {
 
   @Query("SELECT DISTINCT p FROM Property p " +
       "LEFT JOIN FETCH p.address " +

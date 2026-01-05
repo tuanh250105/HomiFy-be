@@ -2,7 +2,7 @@ package com.homifybackend.manageRentals.service;
 
 import com.homifybackend.manageRentals.dto.RentalPropertyDTO;
 import com.homifybackend.manageRentals.mapper.RentalPropertyMapper;
-import com.homifybackend.manageRentals.repository.PropertyRepository;
+import com.homifybackend.manageRentals.repository.RentalManagerRepository;
 import com.homifybackend.manageRentals.repository.CustomerRepository;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RentalService {
 
-  private final PropertyRepository propertyRepository;
+  private final RentalManagerRepository rentalManagerRepository;
   private final RentalPropertyMapper rentalPropertyMapper;
   private final CustomerRepository customerRepository;
 
@@ -27,14 +27,14 @@ public class RentalService {
 
   // READ
   public List<RentalPropertyDTO> getAllProperties() {
-    return propertyRepository.findAllByOwnerIdWithFullRelations(CURRENT_OWNER_ID)
+    return rentalManagerRepository.findAllByOwnerIdWithFullRelations(CURRENT_OWNER_ID)
         .stream()
         .map(rentalPropertyMapper::toDto)
         .toList();
   }
 
   public RentalPropertyDTO getPropertyById(Long id) {
-    return propertyRepository.findByIdWithFullRelations(id)
+    return rentalManagerRepository.findByIdWithFullRelations(id)
         .map(rentalPropertyMapper::toDto)
         .orElse(null);
   }
@@ -62,13 +62,13 @@ public class RentalService {
       }
     }
 
-    property = propertyRepository.save(property);
+    property = rentalManagerRepository.save(property);
     return rentalPropertyMapper.toDto(property);
   }
 
   // UPDATE
   public RentalPropertyDTO updateProperty(Long id, RentalPropertyDTO dto) {
-    Property property = propertyRepository.findByIdWithFullRelations(id).orElse(null);
+    Property property = rentalManagerRepository.findByIdWithFullRelations(id).orElse(null);
     if (property == null) return null;
 
     rentalPropertyMapper.applyDtoToEntity(dto, property);
@@ -79,34 +79,34 @@ public class RentalService {
       }
     }
 
-    property = propertyRepository.save(property);
+    property = rentalManagerRepository.save(property);
     return rentalPropertyMapper.toDto(property);
   }
 
   // DEACTIVATE
   public boolean deactivateProperty(Long id) {
-    Property p = propertyRepository.findById(id).orElse(null);
+    Property p = rentalManagerRepository.findById(id).orElse(null);
     if (p == null || p.getRentalListing() == null) return false;
 
     p.getRentalListing().setRentalStatus(RentalListingStatus.INACTIVE); // ← SỬA Ở ĐÂY
-    propertyRepository.save(p);
+    rentalManagerRepository.save(p);
     return true;
   }
 
   // ACTIVATE
   public boolean activateProperty(Long id) {
-    Property p = propertyRepository.findById(id).orElse(null);
+    Property p = rentalManagerRepository.findById(id).orElse(null);
     if (p == null || p.getRentalListing() == null) return false;
 
     p.getRentalListing().setRentalStatus(RentalListingStatus.ACTIVE);
-    propertyRepository.save(p);
+    rentalManagerRepository.save(p);
     return true;
   }
 
   // DELETE
   public boolean deleteProperty(Long id) {
-    if (!propertyRepository.existsById(id)) return false;
-    propertyRepository.deleteById(id);
+    if (!rentalManagerRepository.existsById(id)) return false;
+    rentalManagerRepository.deleteById(id);
     return true;
   }
 }

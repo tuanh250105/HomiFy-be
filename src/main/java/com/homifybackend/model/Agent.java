@@ -1,28 +1,20 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "agents")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Agent {
-
-    @Id
-    @Column(name = "user_id")
-    private Long userId;
-
-    @OneToOne(fetch = FetchType.EAGER)
-    @MapsId
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
-    private User user;
+@PrimaryKeyJoinColumn(name = "user_id")
+public class Agent extends User{
 
     @Column(name = "license_id", length = 50)
     private String licenseId;

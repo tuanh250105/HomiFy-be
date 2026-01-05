@@ -1,4 +1,5 @@
-package com.homifybackend.dto.listing;
+package com.homifybackend.dto;
+
 import lombok.*;
 
 @Getter @Setter

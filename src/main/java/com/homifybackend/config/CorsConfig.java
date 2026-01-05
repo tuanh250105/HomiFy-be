@@ -24,9 +24,19 @@ public class CorsConfig {
         // Cho phép credentials (cookies, authorization headers)
         config.setAllowCredentials(true);
         
-        // Lấy origins từ environment variable
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        config.setAllowedOrigins(origins);
+        // Lấy origins từ environment variable.
+        // NOTE: When allowCredentials=true, allowedOrigins cannot contain "*".
+        // Use allowedOriginPatterns instead when you want wildcard support.
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+
+        if (origins.contains("*")) {
+            config.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            config.setAllowedOrigins(origins);
+        }
         
         // Cho phép tất cả headers
         config.addAllowedHeader("*");

@@ -16,27 +16,35 @@ import java.util.Optional;
 public class TourController {
 
     private final TourService tourService;
+
     public TourController(TourService tourService) {
         this.tourService = tourService;
     }
 
-    @GetMapping
-    public List<Tour> getAll() {
-        return tourService.findAllTours();
+    // 1. Lấy tour theo đúng Agent quản lý (Chuẩn rồi)
+    @GetMapping("/agent/{agentId}")
+    public ResponseEntity<List<Tour>> getToursByAgent(@PathVariable Long agentId) {
+        List<Tour> tours = tourService.findToursByAgent(agentId);
+        return ResponseEntity.ok(tours);
     }
 
+    // 2. Tạo tour mới từ khách hàng
     @PostMapping
     public ResponseEntity<Tour> create(@RequestBody TourDTO tourDTO) {
         Tour savedTour = tourService.createTourFromDTO(tourDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTour);
     }
 
+    // 3. Cập nhật trạng thái (Duyệt/Từ chối/Đổi lịch)
     @PutMapping("/{id}")
     public ResponseEntity<Tour> update(@PathVariable Long id, @RequestBody Tour data) {
         Optional<Tour> updatedTour = tourService.updateTourStatus(id, data);
+
+        // Trả về nếu trùng lịch (logic null từ service)
         if (updatedTour == null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+
         return updatedTour.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

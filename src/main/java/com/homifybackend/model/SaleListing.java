@@ -3,6 +3,7 @@ package com.homifybackend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,16 +19,18 @@ import java.util.List;
 public class SaleListing {
 
     @Id
-    @Column(name = "property_id")
-    private Long propertyId;
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
     @JoinColumn(name = "property_id")
+    // thêm vào để chặn vòng lặp
+    @JsonIgnoreProperties("saleListing")
     private Property property;
 
     @Column(name = "current_price", precision = 18, scale = 2)

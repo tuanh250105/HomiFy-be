@@ -45,8 +45,9 @@ public class RentalPaymentSchedule {
   @Column(name = "amount_due", nullable = false, precision = 18, scale = 2)
   private BigDecimal amountDue;
 
+  @Enumerated(EnumType.STRING)
   @Column(length = 20, nullable = false)
-  private String status = "PENDING";
+  private RentalPaymentScheduleStatus status = RentalPaymentScheduleStatus.PENDING;
 
   @Column(name = "matched_txn_id")
   private Long matchedTxnId;

@@ -1,6 +1,7 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "customers")
@@ -18,7 +19,18 @@ public class Customer extends User {
 
     private String demand;
 
+    // Trường bổ sung để chứa danh sách nhà đã xem từ TourRequest
+    // JPA bỏ qua trường này khi tạo bảng trong Database
+    @Transient
+    private List<Property> viewedHouses;
+
     public Customer() {}
+    public List<Property> getViewedHouses() {
+        return viewedHouses;
+    }
+    public void setViewedHouses(List<Property> viewedHouses) {
+        this.viewedHouses = viewedHouses;
+    }
     public String getPipelineStatus() { return pipelineStatus; }
     public void setPipelineStatus(String pipelineStatus) { this.pipelineStatus = pipelineStatus; }
     public Integer getInterestScore() { return interestScore; }

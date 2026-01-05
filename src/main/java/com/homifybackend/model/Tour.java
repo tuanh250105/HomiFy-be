@@ -26,6 +26,11 @@ public class Tour {
     @JoinColumn(name = "requester_id")
     private User requester;
 
+    // MÌNH THÊM TRƯỜNG NÀY ĐỂ QUERY ĐƯỢC THEO AGENT
+    @ManyToOne
+    @JoinColumn(name = "sale_listing_id")
+    private SaleListing saleListing;
+
     public Tour() {}
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -46,4 +51,7 @@ public class Tour {
 
     public User getRequester() { return requester; }
     public void setRequester(User requester) { this.requester = requester; }
+
+    public SaleListing getSaleListing() { return saleListing; }
+    public void setSaleListing(SaleListing saleListing) { this.saleListing = saleListing; }
 }

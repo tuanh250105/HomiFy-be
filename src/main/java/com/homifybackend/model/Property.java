@@ -3,6 +3,7 @@ package com.homifybackend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "properties")
@@ -10,7 +11,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "property_type")
 public class Property {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +19,8 @@ public class Property {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
+    // thêm vào để chặn vòng lặp
+    @JsonIgnore
     private Customer owner;
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
@@ -40,8 +42,12 @@ public class Property {
     @Column(name = "area")
     private Double area;
 
+
     @Column(name = "description")
     private String description;
+
+    @Column(name = "property_type")
+    private String propertyType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_rating_id")

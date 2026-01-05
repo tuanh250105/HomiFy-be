@@ -37,7 +37,7 @@ public class JwtService {
     /**
      * Validates JWT secret key on service initialization.
      * HS256 algorithm requires secret key to be at least 256 bits (32 bytes).
-     * 
+     *
      * @throws IllegalStateException if secret key is too short
      */
     @PostConstruct
@@ -45,7 +45,7 @@ public class JwtService {
         if (secret == null || secret.trim().isEmpty()) {
             throw new IllegalStateException("JWT secret key is not configured. Please set app.jwt.secret in your configuration.");
         }
-        
+
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < MIN_SECRET_KEY_LENGTH) {
             throw new IllegalStateException(

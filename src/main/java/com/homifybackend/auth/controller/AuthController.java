@@ -88,6 +88,10 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+        // Backward-compatible: default CUSTOMER
+        if (registerRequest.getRole() == null || registerRequest.getRole().isBlank()) {
+            registerRequest.setRole("customer");
+        }
         try {
             // Validate and store registration data (account not created yet)
             authService.register(registerRequest);
@@ -106,6 +110,18 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/register/customer")
+    public ResponseEntity<?> registerAsCustomer(@Valid @RequestBody RegisterRequest registerRequest) {
+        registerRequest.setRole("customer");
+        return register(registerRequest);
+    }
+
+    @PostMapping("/register/agent")
+    public ResponseEntity<?> registerAsAgent(@Valid @RequestBody RegisterRequest registerRequest) {
+        registerRequest.setRole("agent");
+        return register(registerRequest);
     }
 
     @PostMapping("/verify-email")
@@ -190,6 +206,7 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new ErrorResponse("ID token is required"));
             }
+
             UserResponse response = googleOAuthService.authenticateGoogleUser(googleAuthRequest.getIdToken(), com.homifybackend.model.Role.AGENT);
             return ResponseEntity.ok(response);
         } catch (org.springframework.security.authentication.BadCredentialsException e) {

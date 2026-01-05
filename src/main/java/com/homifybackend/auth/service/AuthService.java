@@ -83,7 +83,7 @@ public class AuthService {
 
         // Get user - already fetched by JOIN FETCH, so no LazyInitializationException
         User user = account.getUser();
-
+        
         // Enforce role-specific login when provided (used by /login/customer and /login/agent)
         if (loginRequest.getExpectedRole() != null && !loginRequest.getExpectedRole().isBlank()) {
             Role expectedRole;
@@ -154,6 +154,12 @@ public class AuthService {
 
         // Check if email already exists
         if (accountRepository.existsByEmail(normalizedEmail)) {
+            // If the email exists, tell user to login on the correct page based on existing role
+            Account existingAccount = accountRepository.findByEmailWithUser(normalizedEmail).orElse(null);
+            if (existingAccount != null && existingAccount.getUser() != null && existingAccount.getUser().getRole() != null) {
+                throw new RuntimeException("Email already registered as " + existingAccount.getUser().getRole()
+                        + ". Please login on the correct page.");
+            }
             throw new RuntimeException("Email already registered");
         }
 
@@ -203,7 +209,7 @@ public class AuthService {
     @Transactional
     public UserResponse verifyEmailAndActivate(VerifyOtpRequest verifyOtpRequest) {
         String normalizedEmail = verifyOtpRequest.getEmail().trim().toLowerCase();
-
+        
         // Verify OTP
         boolean isValidOtp = otpService.verifyOtp(
                 normalizedEmail,
@@ -236,25 +242,43 @@ public class AuthService {
         }
         // Double-check if account was created in the meantime (race condition protection)
         if (accountRepository.existsByEmail(normalizedEmail)) {
+            Account existingAccount = accountRepository.findByEmailWithUser(normalizedEmail).orElse(null);
+            if (existingAccount != null && existingAccount.getUser() != null && existingAccount.getUser().getRole() != null) {
+                throw new RuntimeException("Email already registered as " + existingAccount.getUser().getRole()
+                        + ". Please login on the correct page.");
+            }
             throw new RuntimeException("Email already registered");
         }
         if (accountRepository.existsByUsername(normalizedUsername)) {
             throw new RuntimeException("Username already taken");
         }
 
-        // Create new user
-        User user = User.builder()
-                .fullName(registerRequest.getFullName().trim())
-                .phoneNumber(registerRequest.getPhone() != null ? registerRequest.getPhone().trim() : null)
-                .registrationDate(LocalDate.now())
-                .role(role)
-                .build();
-
-        user = userRepository.save(user);
+        // With JOINED inheritance (Customer/Agent extends User), we must persist the subtype,
+        // otherwise saving the subtype later will create a SECOND users row with null fields.
+        User persistedUser;
+        if (role == Role.CUSTOMER) {
+            Customer customer = Customer.builder()
+                    .fullName(registerRequest.getFullName().trim())
+                    .phoneNumber(registerRequest.getPhone() != null ? registerRequest.getPhone().trim() : null)
+                    .registrationDate(LocalDate.now())
+                    .role(Role.CUSTOMER)
+                    .build();
+            persistedUser = customerRepository.save(customer);
+        } else if (role == Role.AGENT) {
+            Agent agent = Agent.builder()
+                    .fullName(registerRequest.getFullName().trim())
+                    .phoneNumber(registerRequest.getPhone() != null ? registerRequest.getPhone().trim() : null)
+                    .registrationDate(LocalDate.now())
+                    .role(Role.AGENT)
+                    .build();
+            persistedUser = agentRepository.save(agent);
+        } else {
+            throw new RuntimeException("Invalid role. Must be 'customer' or 'agent'");
+        }
 
         // Create account for user
         Account account = Account.builder()
-                .user(user)
+                .user(persistedUser)
                 .username(normalizedUsername)
                 .email(normalizedEmail)
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
@@ -262,30 +286,18 @@ public class AuthService {
 
         accountRepository.save(account);
 
-        // Create role-specific record
-        // Create role-specific row for JOINED inheritance (reuse the same user_id)
-        if (role == Role.CUSTOMER) {
-            Customer customer = Customer.builder().build();
-            customer.setUserId(user.getUserId());
-            customerRepository.save(customer);
-        } else if (role == Role.AGENT) {
-            Agent agent = new Agent();
-            agent.setUserId(user.getUserId());
-            agentRepository.save(agent);
-        }
-
         // Auto login after verification
         UserDetails userDetails = userDetailsService.loadUserByUsername(account.getUsername());
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
         return UserResponse.builder()
-                .id(user.getUserId())
+                .id(persistedUser.getUserId())
                 .email(account.getEmail())
                 .username(account.getUsername())
-                .fullName(user.getFullName())
-                .phone(user.getPhoneNumber())
-                .role(user.getRole().toString())
+                .fullName(persistedUser.getFullName())
+                .phone(persistedUser.getPhoneNumber())
+                .role(persistedUser.getRole() != null ? persistedUser.getRole().toString() : null)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
@@ -296,7 +308,7 @@ public class AuthService {
         if (!accountRepository.existsByEmail(forgotPasswordRequest.getEmail())) {
             throw new RuntimeException("User not found");
         }
-
+        
         // Send OTP for password reset
         otpService.createAndSendOtp(forgotPasswordRequest.getEmail(), "FORGOT_PASSWORD");
     }
@@ -356,7 +368,7 @@ public class AuthService {
         // Create role-specific record if doesn't exist
         // NOTE: Customer/Agent extends User (JOINED). We shouldn't create a new row with the same PK.
         // At this stage we only ensure related tables exist when the model supports it.
-// Current Customer/Agent classes don't expose a (user) association, so we skip creation here.
+        // Current Customer/Agent classes don't expose a (user) association, so we skip creation here.
         // If you need promotion/demotion between roles, implement it at entity level (migrate inheritance row).
         if (newRole == Role.CUSTOMER) {
             // no-op
@@ -420,3 +432,4 @@ public class AuthService {
                 .build();
     }
 }
+

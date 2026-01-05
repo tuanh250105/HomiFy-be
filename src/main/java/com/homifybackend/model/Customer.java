@@ -1,6 +1,10 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -9,6 +13,9 @@ import java.util.List;
 @SuperBuilder
 @Table(name = "customers")
 @PrimaryKeyJoinColumn(name = "user_id")
+@Getter
+@Setter
+@AllArgsConstructor
 public class Customer extends User {
 
     @Column(name = "pipeline_status")

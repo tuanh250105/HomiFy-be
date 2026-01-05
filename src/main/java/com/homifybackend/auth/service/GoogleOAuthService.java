@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,9 @@ public class GoogleOAuthService {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Value("${app.google.client-id}")
     private String clientId;
@@ -160,6 +164,7 @@ public class GoogleOAuthService {
                 lastException = e;
             }
         }
+
         if (idToken == null) {
             if (lastException != null) {
                 logger.error("Google ID token verification failed: {}", lastException.getMessage(), lastException);
@@ -189,33 +194,38 @@ public class GoogleOAuthService {
                 counter++;
             }
 
-            User user = User.builder()
-                    .fullName(name != null ? name : "User")
-                    .registrationDate(LocalDate.now())
-                    .role(expectedRole)
-                    .build();
+            // With JOINED inheritance, persist the correct subtype directly.
+            User persistedUser;
+            if (expectedRole == Role.CUSTOMER) {
+                Customer customer = Customer.builder()
+                        .fullName(name != null ? name : "User")
+                        .registrationDate(LocalDate.now())
+                        .role(Role.CUSTOMER)
+                        .build();
+                persistedUser = customerRepository.save(customer);
+            } else if (expectedRole == Role.AGENT) {
+                Agent agent = Agent.builder()
+                        .fullName(name != null ? name : "User")
+                        .registrationDate(LocalDate.now())
+                        .role(Role.AGENT)
+                        .build();
+                persistedUser = agentRepository.save(agent);
+            } else {
+                throw new RuntimeException("Invalid expected role");
+            }
 
-            user = userRepository.save(user);
+            // Google/OAuth accounts still need a non-null password due to DB constraint.
+            // Generate a random password and hash it; user will not use it to login with password.
+            String randomPassword = java.util.UUID.randomUUID().toString();
 
             account = Account.builder()
-                    .user(user)
+                    .user(persistedUser)
                     .username(username)
                     .email(email)
-                    .password(null)
+                    .password(passwordEncoder.encode(randomPassword))
                     .build();
 
             account = accountRepository.save(account);
-
-            // Create role-specific row if needed
-            if (expectedRole == Role.CUSTOMER) {
-                Customer customer = Customer.builder().build();
-                customer.setUserId(user.getUserId());
-                customerRepository.save(customer);
-            } else if (expectedRole == Role.AGENT) {
-                Agent agent = Agent.builder().build();
-                agent.setUserId(user.getUserId());
-                agentRepository.save(agent);
-            }
         } else {
             // Existing account: enforce role
             User user = account.getUser();

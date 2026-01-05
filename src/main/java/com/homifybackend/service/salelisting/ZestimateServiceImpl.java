@@ -1,20 +1,25 @@
 package com.homifybackend.service.salelisting;
 
-import com.homifybackend.dto.ZestimateRequest;
-import com.homifybackend.dto.ZestimateResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.homifybackend.dto.ZestimateRequest;
+import com.homifybackend.dto.ZestimateResponse;
 
 @Service
 public class ZestimateServiceImpl implements ZestimateService {
@@ -35,6 +40,7 @@ public class ZestimateServiceImpl implements ZestimateService {
     @Override
     public ZestimateResponse calculateZestimate(ZestimateRequest request) {
         File tempFile = null;
+        File tempDir = null;
         try {
             log.info("Starting zestimate calculation for property type: {}", request.getPropertyType());
             
@@ -47,15 +53,19 @@ public class ZestimateServiceImpl implements ZestimateService {
             objectMapper.writeValue(tempFile, objectMapper.readTree(jsonInput));
             log.debug("Temp file created: {}", tempFile.getAbsolutePath());
             
+            // Extract Python script and model files from classpath to temp folder (for JAR deployment)
+            tempDir = extractMLFilesToTempDir();
+            File scriptFile = new File(tempDir, "predict.py");
+            
             // Build Python process with file path
             ProcessBuilder processBuilder = new ProcessBuilder(
                 pythonPath,
-                scriptPath,
+                scriptFile.getAbsolutePath(),
                 tempFile.getAbsolutePath()
             );
             
-            // Set working directory to project root
-            processBuilder.directory(new File(System.getProperty("user.dir")));
+            // Set working directory to temp folder (so script can find model.pkl and scaler.pkl)
+            processBuilder.directory(tempDir);
             processBuilder.redirectErrorStream(true);
             
             // Start process
@@ -112,11 +122,76 @@ public class ZestimateServiceImpl implements ZestimateService {
             log.error("Unexpected error during zestimate calculation", e);
             throw new RuntimeException("Zestimate calculation failed: " + e.getMessage(), e);
         } finally {
-            // Clean up temp file
+            // Clean up temp files
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
             }
+            if (tempDir != null && tempDir.exists()) {
+                deleteDirectory(tempDir);
+            }
         }
+    }
+    
+    /**
+     * Extract all ML files (script, model, scaler) from classpath to temp directory for JAR deployment
+     */
+    private File extractMLFilesToTempDir() throws IOException {
+        // Create temp directory for ML files
+        File tempDir = Files.createTempDirectory("zestimate_ml_").toFile();
+        tempDir.deleteOnExit();
+        
+        // Extract all necessary files
+        String[] mlFiles = {"predict.py", "model.pkl", "scaler.pkl"};
+        
+        for (String filename : mlFiles) {
+            ClassPathResource resource = new ClassPathResource("ml/" + filename);
+            File targetFile = new File(tempDir, filename);
+            
+            try (InputStream in = resource.getInputStream();
+                 FileOutputStream out = new FileOutputStream(targetFile)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            }
+            
+            log.debug("Extracted {} to: {}", filename, targetFile.getAbsolutePath());
+        }
+        
+        // Create ml subdirectory and copy model files there (script expects ml/model.pkl)
+        File mlSubdir = new File(tempDir, "ml");
+        mlSubdir.mkdir();
+        
+        Files.copy(
+            new File(tempDir, "model.pkl").toPath(),
+            new File(mlSubdir, "model.pkl").toPath()
+        );
+        Files.copy(
+            new File(tempDir, "scaler.pkl").toPath(),
+            new File(mlSubdir, "scaler.pkl").toPath()
+        );
+        
+        log.debug("Created ml subdirectory with model files at: {}", mlSubdir.getAbsolutePath());
+        
+        return tempDir;
+    }
+    
+    /**
+     * Recursively delete directory
+     */
+    private void deleteDirectory(File directory) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteDirectory(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        directory.delete();
     }
     
     /**

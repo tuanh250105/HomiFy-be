@@ -1,24 +1,35 @@
 package com.homifybackend.service.salelisting;
 
-import com.homifybackend.model.Property;
-import com.homifybackend.model.PropertyType;
-import com.homifybackend.model.SaleStatus;
-import com.homifybackend.model.SaleListing;
-import com.homifybackend.model.Address;
-import com.homifybackend.dto.CreateDraftListingRequest;
-import com.homifybackend.dto.CreateDraftListingResponse;
-import com.homifybackend.dto.ListingResponse;
-import com.homifybackend.dto.UpdateListingRequest;
-import com.homifybackend.model.*;
-import com.homifybackend.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.homifybackend.dto.CreateDraftListingRequest;
+import com.homifybackend.dto.CreateDraftListingResponse;
+import com.homifybackend.dto.ListingResponse;
+import com.homifybackend.dto.UpdateListingRequest;
+import com.homifybackend.model.Address;
+import com.homifybackend.model.Agent;
+import com.homifybackend.model.Customer;
+import com.homifybackend.model.Property;
+import com.homifybackend.model.PropertyType;
+import com.homifybackend.model.SaleListing;
+import com.homifybackend.model.SaleListingStatus;
+import com.homifybackend.model.SaleStatus;
+import com.homifybackend.repository.AddressRepository;
+import com.homifybackend.repository.AgentRepository;
+import com.homifybackend.repository.ApartmentRepository;
+import com.homifybackend.repository.CustomerRepository;
+import com.homifybackend.repository.PropertyRepository;
+import com.homifybackend.repository.SaleListingRepository;
+import com.homifybackend.repository.SingleHouseRepository;
+import com.homifybackend.repository.TownHouseRepository;
+import com.homifybackend.repository.VillaRepository;
 
 @Service
 public class ListingService {
@@ -127,23 +138,33 @@ public class ListingService {
             // Update property fields from request
             if (request.getStructureData().containsKey("yearBuilt")) {
                 Object yearBuilt = request.getStructureData().get("yearBuilt");
-                property.setYearBuilt(yearBuilt instanceof Integer ? (Integer) yearBuilt : Integer.parseInt(yearBuilt.toString()));
+                if (yearBuilt != null) {
+                    property.setYearBuilt(yearBuilt instanceof Integer ? (Integer) yearBuilt : Integer.parseInt(yearBuilt.toString()));
+                }
             }
             if (request.getStructureData().containsKey("floors")) {
                 Object floors = request.getStructureData().get("floors");
-                property.setFloors(floors instanceof Integer ? (Integer) floors : Integer.parseInt(floors.toString()));
+                if (floors != null) {
+                    property.setFloors(floors instanceof Integer ? (Integer) floors : Integer.parseInt(floors.toString()));
+                }
             }
             if (request.getStructureData().containsKey("beds")) {
                 Object beds = request.getStructureData().get("beds");
-                property.setBeds(beds instanceof Integer ? (Integer) beds : Integer.parseInt(beds.toString()));
+                if (beds != null) {
+                    property.setBeds(beds instanceof Integer ? (Integer) beds : Integer.parseInt(beds.toString()));
+                }
             }
             if (request.getStructureData().containsKey("baths")) {
                 Object baths = request.getStructureData().get("baths");
-                property.setBaths(baths instanceof Integer ? (Integer) baths : Integer.parseInt(baths.toString()));
+                if (baths != null) {
+                    property.setBaths(baths instanceof Integer ? (Integer) baths : Integer.parseInt(baths.toString()));
+                }
             }
             if (request.getStructureData().containsKey("area")) {
                 Object area = request.getStructureData().get("area");
-                property.setArea(area instanceof Double ? (Double) area : Double.parseDouble(area.toString()));
+                if (area != null) {
+                    property.setArea(area instanceof Double ? (Double) area : Double.parseDouble(area.toString()));
+                }
             }
             if (request.getStructureData().containsKey("description")) {
                 property.setDescription((String) request.getStructureData().get("description"));

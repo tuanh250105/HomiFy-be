@@ -14,7 +14,7 @@ import org.springframework.web.context.request.WebRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFoundException(NotFoundException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
@@ -23,10 +23,10 @@ public class GlobalExceptionHandler {
         body.put("error", "Not Found");
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false).replace("uri=", ""));
-        
+
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
-    
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequestException(BadRequestException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
@@ -35,30 +35,30 @@ public class GlobalExceptionHandler {
         body.put("error", "Bad Request");
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false).replace("uri=", ""));
-        
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
-    
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
         Map<String, String> errors = new HashMap<>();
-        
+
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
+
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Validation Failed");
         body.put("errors", errors);
         body.put("path", request.getDescription(false).replace("uri=", ""));
-        
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
-    
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
         body.put("error", "Internal Server Error");
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false).replace("uri=", ""));
-        
+
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

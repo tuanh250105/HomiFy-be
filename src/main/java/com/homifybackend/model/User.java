@@ -10,6 +10,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Inheritance(strategy = InheritanceType.JOINED)
 public class User {
     @Id

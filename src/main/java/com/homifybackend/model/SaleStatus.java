@@ -1,9 +1,7 @@
 package com.homifybackend.model;
 
-public enum SaleListingStatus {
+public enum SaleStatus {
     DRAFT,
     ACTIVE,
-    PENDING,
-    SOLD
+    INACTIVE
 }
-

@@ -3,6 +3,7 @@ package com.homifybackend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "users")
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Inheritance(strategy = InheritanceType.JOINED)
 public class User {
     @Id

@@ -45,6 +45,10 @@ public class AuthController {
     @Autowired
     private AccountRepository accountRepository;
 
+    /**
+     * @deprecated Use /login/customer or /login/agent instead for role-specific login.
+     */
+    @Deprecated
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
@@ -52,13 +56,13 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
             // Check if account exists to provide more helpful error message
-            boolean accountExists = accountRepository.existsByEmail(loginRequest.getEmail()) 
+            boolean accountExists = accountRepository.existsByEmail(loginRequest.getEmail())
                     || accountRepository.existsByUsername(loginRequest.getEmail());
-            
-            String errorMessage = accountExists 
-                    ? "Invalid email or password" 
+
+            String errorMessage = accountExists
+                    ? "Invalid email or password"
                     : "Account not found. Please register first or verify your email if you just registered.";
-            
+
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse(errorMessage));
         } catch (Exception e) {
@@ -70,50 +74,35 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/login/customer")
+    public ResponseEntity<?> loginAsCustomer(@Valid @RequestBody LoginRequest loginRequest) {
+        loginRequest.setExpectedRole("CUSTOMER");
+        return login(loginRequest);
+    }
+
+    @PostMapping("/login/agent")
+    public ResponseEntity<?> loginAsAgent(@Valid @RequestBody LoginRequest loginRequest) {
+        loginRequest.setExpectedRole("AGENT");
+        return login(loginRequest);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
-            // Log the registration attempt for debugging
-            System.out.println("=== Registration Request ===");
-            System.out.println("Email: " + registerRequest.getEmail());
-            System.out.println("Username: " + registerRequest.getUsername());
-            System.out.println("Full Name: " + registerRequest.getFullName());
-            
             // Validate and store registration data (account not created yet)
             authService.register(registerRequest);
-            System.out.println("Registration data validated and stored");
-            
+
             // Send OTP email for verification
             // Account will be created only after OTP verification
             String normalizedEmail = registerRequest.getEmail().trim().toLowerCase();
-            try {
-                authService.sendRegistrationOtp(normalizedEmail);
-                System.out.println("OTP email sent successfully");
-            } catch (Exception emailException) {
-                // If email fails, still return success but warn user
-                System.err.println("=== WARNING: Registration successful but email failed ===");
-                System.err.println("Email error: " + emailException.getMessage());
-                emailException.printStackTrace();
-                
-                // Return success but with a warning message
-                return ResponseEntity.status(HttpStatus.ACCEPTED)
-                        .body(new ErrorResponse("Registration data saved, but failed to send verification email. Please contact support or try again later. Error: " + emailException.getMessage()));
-            }
-            
-            return ResponseEntity.ok(new MessageResponse("Please check your email for verification code to complete registration."));
+            authService.sendRegistrationOtp(normalizedEmail);
+
+            return ResponseEntity.ok(new MessageResponse(
+                    "Please check your email for verification code to complete registration."));
         } catch (RuntimeException e) {
-            // Log the error for debugging
-            System.err.println("=== Registration Validation Failed ===");
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            // Log the error for debugging
-            System.err.println("=== Unexpected Registration Error ===");
-            System.err.println("Error: " + e.getMessage());
-            System.err.println("Error class: " + e.getClass().getName());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred: " + e.getMessage()));
         }
@@ -151,7 +140,8 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
         try {
             authService.resetPassword(resetPasswordRequest);
-            return ResponseEntity.ok(new MessageResponse("Password reset successful. You can now login with your new password."));
+            return ResponseEntity.ok(new MessageResponse(
+                    "Password reset successful. You can now login with your new password."));
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
@@ -161,50 +151,59 @@ public class AuthController {
         }
     }
 
+    /**
+     * @deprecated Use /google/customer or /google/agent (to be added) for role-specific google login.
+     */
+    @Deprecated
     @PostMapping("/google")
     public ResponseEntity<?> googleAuth(@Valid @RequestBody GoogleAuthRequest googleAuthRequest) {
+        // Backward-compatible: default CUSTOMER
+        return googleAuthAsCustomer(googleAuthRequest);
+    }
+
+    @PostMapping("/google/customer")
+    public ResponseEntity<?> googleAuthAsCustomer(@Valid @RequestBody GoogleAuthRequest googleAuthRequest) {
         try {
             if (googleAuthRequest.getIdToken() == null || googleAuthRequest.getIdToken().trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new ErrorResponse("ID token is required"));
             }
-            
-            UserResponse response = googleOAuthService.authenticateGoogleUser(googleAuthRequest.getIdToken());
+
+            UserResponse response = googleOAuthService.authenticateGoogleUser(googleAuthRequest.getIdToken(), com.homifybackend.model.Role.CUSTOMER);
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            // Log the error for debugging
-            System.err.println("=== Google Auth Error ===");
-            System.err.println("Error: " + e.getMessage());
-            System.err.println("Error class: " + e.getClass().getName());
-            if (e.getCause() != null) {
-                System.err.println("Cause: " + e.getCause().getMessage());
-            }
-            e.printStackTrace();
-            
-            // Check if it's a configuration error (should be 500) vs authentication error (401)
-            String errorMessage = e.getMessage();
-            if (errorMessage != null && errorMessage.contains("not properly configured")) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new ErrorResponse(errorMessage));
-            }
-            
-            // Return more detailed error message for debugging
-            String detailedMessage = errorMessage != null ? errorMessage : "Google authentication failed";
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse(detailedMessage));
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Google authentication failed"));
         } catch (Exception e) {
-            // Log the error for debugging
-            System.err.println("=== Google Auth Exception ===");
-            System.err.println("Exception: " + e.getMessage());
-            System.err.println("Exception class: " + e.getClass().getName());
-            if (e.getCause() != null) {
-                System.err.println("Cause: " + e.getCause().getMessage());
-            }
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("An error occurred during Google authentication: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/google/agent")
+    public ResponseEntity<?> googleAuthAsAgent(@Valid @RequestBody GoogleAuthRequest googleAuthRequest) {
+        try {
+            if (googleAuthRequest.getIdToken() == null || googleAuthRequest.getIdToken().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("ID token is required"));
+            }
+            UserResponse response = googleOAuthService.authenticateGoogleUser(googleAuthRequest.getIdToken(), com.homifybackend.model.Role.AGENT);
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Google authentication failed"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("An error occurred during Google authentication: " + e.getMessage()));
+        }
+    }
+
 
     @PostMapping("/choose-role")
     public ResponseEntity<?> chooseRole(
@@ -257,4 +256,3 @@ public class AuthController {
         }
     }
 }
-

@@ -1,11 +1,12 @@
 package com.homifybackend.model;
 
 import jakarta.persistence.*;
-import lombok.Builder;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "customers")
-@Builder
+@SuperBuilder
 @PrimaryKeyJoinColumn(name = "user_id")
 public class Customer extends User {
 

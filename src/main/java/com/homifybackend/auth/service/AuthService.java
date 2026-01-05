@@ -2,7 +2,6 @@ package com.homifybackend.auth.service;
 
 import java.time.LocalDate;
 
-import com.homifybackend.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,11 +19,16 @@ import com.homifybackend.auth.dto.ResetPasswordRequest;
 import com.homifybackend.auth.dto.UserResponse;
 import com.homifybackend.auth.dto.VerifyOtpRequest;
 import com.homifybackend.auth.repository.AccountRepository;
-import com.homifybackend.auth.repository.AgentRepository;
-import com.homifybackend.auth.repository.CustomerRepository;
+import com.homifybackend.repository.AgentRepository;
+import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.auth.repository.UserRepository;
 import com.homifybackend.auth.security.CustomUserDetailsService;
 import com.homifybackend.auth.security.JwtService;
+import com.homifybackend.model.Account;
+import com.homifybackend.model.Agent;
+import com.homifybackend.model.Customer;
+import com.homifybackend.model.Role;
+import com.homifybackend.model.User;
 
 @Service
 public class AuthService {
@@ -79,12 +83,26 @@ public class AuthService {
 
         // Get user - already fetched by JOIN FETCH, so no LazyInitializationException
         User user = account.getUser();
-        
+
+        // Enforce role-specific login when provided (used by /login/customer and /login/agent)
+        if (loginRequest.getExpectedRole() != null && !loginRequest.getExpectedRole().isBlank()) {
+            Role expectedRole;
+            try {
+                expectedRole = Role.valueOf(loginRequest.getExpectedRole().trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new BadCredentialsException("Invalid expected role");
+            }
+
+            if (user.getRole() != expectedRole) {
+                throw new BadCredentialsException("You are not allowed to login on this page");
+            }
+        }
+
         // Extract all needed data within transaction to avoid LazyInitializationException
         Long userId = user.getUserId();
         String fullName = user.getFullName();
         String phone = user.getPhoneNumber();
-        String role = user.getRole().toString();
+        String role = user.getRole() != null ? user.getRole().toString() : null;
         String email = account.getEmail();
         String username = account.getUsername();
 
@@ -185,7 +203,7 @@ public class AuthService {
     @Transactional
     public UserResponse verifyEmailAndActivate(VerifyOtpRequest verifyOtpRequest) {
         String normalizedEmail = verifyOtpRequest.getEmail().trim().toLowerCase();
-        
+
         // Verify OTP
         boolean isValidOtp = otpService.verifyOtp(
                 normalizedEmail,
@@ -205,10 +223,17 @@ public class AuthService {
 
         // Now create the account after OTP verification
         String normalizedUsername = registerRequest.getUsername().trim();
-        String temp_role = registerRequest.getRole() != null && !registerRequest.getRole().isEmpty()
-                ? registerRequest.getRole().toUpperCase()
+        // Parse role according to current model enum (CUSTOMER / AGENT)
+        String roleInput = (registerRequest.getRole() != null && !registerRequest.getRole().isBlank())
+                ? registerRequest.getRole().trim()
                 : "customer";
-        Role role = Role.valueOf(temp_role);
+
+        Role role;
+        try {
+            role = Role.valueOf(roleInput.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Invalid role. Must be 'customer' or 'agent'");
+        }
         // Double-check if account was created in the meantime (race condition protection)
         if (accountRepository.existsByEmail(normalizedEmail)) {
             throw new RuntimeException("Email already registered");
@@ -238,15 +263,14 @@ public class AuthService {
         accountRepository.save(account);
 
         // Create role-specific record
-        if ("customer".equals(role)) {
-            Customer customer = Customer.builder()
-                    .user(user)
-                    .build();
+        // Create role-specific row for JOINED inheritance (reuse the same user_id)
+        if (role == Role.CUSTOMER) {
+            Customer customer = Customer.builder().build();
+            customer.setUserId(user.getUserId());
             customerRepository.save(customer);
-        } else if ("agent".equals(role)) {
-            Agent agent = Agent.builder()
-                    .user(user)
-                    .build();
+        } else if (role == Role.AGENT) {
+            Agent agent = new Agent();
+            agent.setUserId(user.getUserId());
             agentRepository.save(agent);
         }
 
@@ -272,7 +296,7 @@ public class AuthService {
         if (!accountRepository.existsByEmail(forgotPasswordRequest.getEmail())) {
             throw new RuntimeException("User not found");
         }
-        
+
         // Send OTP for password reset
         otpService.createAndSendOtp(forgotPasswordRequest.getEmail(), "FORGOT_PASSWORD");
     }
@@ -316,9 +340,12 @@ public class AuthService {
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
 
         User user = account.getUser();
-        String newRole = chooseRoleRequest.getRole().toLowerCase();
+        String roleInput = (chooseRoleRequest.getRole() != null) ? chooseRoleRequest.getRole().trim() : "";
 
-        if (!newRole.equals("customer") && !newRole.equals("agent")) {
+        Role newRole;
+        try {
+            newRole = Role.valueOf(roleInput.toUpperCase());
+        } catch (IllegalArgumentException ex) {
             throw new RuntimeException("Invalid role. Must be 'customer' or 'agent'");
         }
 
@@ -327,20 +354,14 @@ public class AuthService {
         user = userRepository.save(user);
 
         // Create role-specific record if doesn't exist
-        if ("customer".equals(newRole)) {
-            if (!customerRepository.existsById(user.getUserId())) {
-                Customer customer = Customer.builder()
-                        .user(user)
-                        .build();
-                customerRepository.save(customer);
-            }
-        } else if ("agent".equals(newRole)) {
-            if (!agentRepository.existsById(user.getUserId())) {
-                Agent agent = Agent.builder()
-                        .user(user)
-                        .build();
-                agentRepository.save(agent);
-            }
+        // NOTE: Customer/Agent extends User (JOINED). We shouldn't create a new row with the same PK.
+        // At this stage we only ensure related tables exist when the model supports it.
+// Current Customer/Agent classes don't expose a (user) association, so we skip creation here.
+        // If you need promotion/demotion between roles, implement it at entity level (migrate inheritance row).
+        if (newRole == Role.CUSTOMER) {
+            // no-op
+        } else if (newRole == Role.AGENT) {
+            // no-op
         }
 
         // Generate new tokens with updated role
@@ -354,7 +375,7 @@ public class AuthService {
                 .username(account.getUsername())
                 .fullName(user.getFullName())
                 .phone(user.getPhoneNumber())
-                .role(user.getRole())
+                .role(user.getRole() != null ? user.getRole().toString() : null)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
@@ -393,10 +414,9 @@ public class AuthService {
                 .username(account.getUsername())
                 .fullName(user.getFullName())
                 .phone(user.getPhoneNumber())
-                .role(user.getRole())
+                .role(user.getRole() != null ? user.getRole().toString() : null)
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
     }
 }
-

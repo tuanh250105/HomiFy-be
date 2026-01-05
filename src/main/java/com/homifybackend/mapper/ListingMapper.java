@@ -22,8 +22,10 @@ public class ListingMapper {
                 address.getCity(),
                 address.getProvince(),
                 address.getStreet(),
+                address.getNation(),
                 address.getLatitude(),
-                address.getLongitude()
+                address.getLongitude(),
+                address.getZipCode()
         );
 
         return ListingMapDTO.builder()
@@ -47,8 +49,10 @@ public class ListingMapper {
                 address.getCity(),
                 address.getProvince(),
                 address.getStreet(),
+                address.getNation(),
                 address.getLatitude(),
-                address.getLongitude()
+                address.getLongitude(),
+                address.getZipCode()
         );
 
         return ListingMapDTO.builder()

@@ -9,9 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.homifybackend.dto.AddressDTO;
 import com.homifybackend.dto.CreateDraftListingRequest;
 import com.homifybackend.dto.CreateDraftListingResponse;
 import com.homifybackend.dto.ListingResponse;
+import com.homifybackend.dto.PropertyDTO;
+import com.homifybackend.dto.SubtypeDTO;
 import com.homifybackend.dto.UpdateListingRequest;
 import com.homifybackend.model.Address;
 import com.homifybackend.model.Agent;
@@ -228,8 +231,8 @@ public class AgentListingService {
      */
     @Transactional(readOnly = true)
     public ListingResponse getListing(Long listingId) {
-        // Find listing
-        SaleListing saleListing = saleListingRepository.findById(listingId)
+        // Find listing with eager fetch (solves lazy loading issue)
+        SaleListing saleListing = saleListingRepository.findByIdWithDetails(listingId)
             .orElseThrow(() -> new RuntimeException("Listing not found with id: " + listingId));
         
         Property property = saleListing.getProperty();
@@ -264,30 +267,25 @@ public class AgentListingService {
         response.setEstimateValue(saleListing.getEstimateValue());
         response.setMarketingDescription(saleListing.getMarketingDescription());
         
-        // Build property map
-        Map<String, Object> propertyMap = new HashMap<>();
-        propertyMap.put("propertyId", property.getPropertyId());
-        propertyMap.put("yearBuilt", property.getYearBuilt());
-        propertyMap.put("floors", property.getFloors());
-        propertyMap.put("beds", property.getBeds());
-        propertyMap.put("baths", property.getBaths());
-        propertyMap.put("area", property.getArea());
-        propertyMap.put("description", property.getDescription());
-        response.setProperty(propertyMap);
+        // Build PropertyDTO (no Entity reference)
+        PropertyDTO propertyDTO = new PropertyDTO();
+        propertyDTO.setPropertyId(property.getPropertyId());
+        propertyDTO.setYearBuilt(property.getYearBuilt());
+        propertyDTO.setFloors(property.getFloors());
+        propertyDTO.setBeds(property.getBeds());
+        propertyDTO.setBaths(property.getBaths());
+        propertyDTO.setArea(property.getArea());
+        propertyDTO.setDescription(property.getDescription());
+        response.setProperty(propertyDTO);
         
-        // Build address map
-        Map<String, Object> addressMap = new HashMap<>();
-        addressMap.put("street", address.getStreet());
-        addressMap.put("city", address.getCity());
-        addressMap.put("province", address.getProvince());
-        addressMap.put("nation", address.getNation());
-        addressMap.put("latitude", address.getLatitude());
-        addressMap.put("longitude", address.getLongitude());
-        response.setAddress(addressMap);
+        // Build AddressDTO (no Entity reference)
+        AddressDTO addressDTO = new AddressDTO(property.getAddress().getAddressId(), property.getAddress().getCity(), property.getAddress().getProvince(), property.getAddress().getNation(), null, null, null, null);
+        response.setAddress(addressDTO);
         
-        // Build subtype map
-        Map<String, Object> subtypeMap = getSubtypeData(property.getPropertyId(), propertyType);
-        response.setSubtype(subtypeMap);
+        // Build SubtypeDTO (wrapper for Map)
+        Map<String, Object> subtypeData = getSubtypeData(property.getPropertyId(), propertyType);
+        SubtypeDTO subtypeDTO = new SubtypeDTO(subtypeData);
+        response.setSubtype(subtypeDTO);
         
         // TODO: Add rooms, features, ratings, images
         
@@ -404,7 +402,8 @@ public class AgentListingService {
     public List<ListingResponse> getAllListings(Long agentId, Long ownerId, String status) {
         System.out.println("=== getAllListings called with agentId=" + agentId + ", ownerId=" + ownerId + ", status=" + status);
         
-        List<SaleListing> listings = saleListingRepository.findAll();
+        // Use eager fetch query to avoid lazy loading issues
+        List<SaleListing> listings = saleListingRepository.findAllWithDetails();
         System.out.println("=== Total listings from DB: " + listings.size());
         
         // Filter by agentId if provided

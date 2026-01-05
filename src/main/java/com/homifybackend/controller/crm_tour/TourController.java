@@ -1,7 +1,7 @@
 package com.homifybackend.controller.crm_tour;
 
+import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Tour;
-import com.homifybackend.repository.TourRepository;
 import com.homifybackend.service.crm_tour.TourService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,28 +15,20 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:3000")
 public class TourController {
 
-    private final TourRepository repository;
     private final TourService tourService;
-
-    public TourController(TourRepository repository, TourService tourService) {
-        this.repository = repository;
+    public TourController(TourService tourService) {
         this.tourService = tourService;
     }
 
     @GetMapping
     public List<Tour> getAll() {
-        return repository.findAll();
+        return tourService.findAllTours();
     }
 
     @PostMapping
-    public Tour create(@RequestBody Tour data) {
-        if (data.getStatus() == null) {
-            data.setStatus("PENDING");
-        }
-        if (data.getRescheduleCount() == null) {
-            data.setRescheduleCount(0);
-        }
-        return repository.save(data);
+    public ResponseEntity<Tour> create(@RequestBody TourDTO tourDTO) {
+        Tour savedTour = tourService.createTourFromDTO(tourDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedTour);
     }
 
     @PutMapping("/{id}")

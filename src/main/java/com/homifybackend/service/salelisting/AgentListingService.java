@@ -98,10 +98,35 @@ public class AgentListingService {
             });
         System.out.println("=== Using owner: " + owner.getUserId());
         
-        // Step 3: Insert Property (base table only)
-        Property property = new Property();
-        property.setOwner(owner);
+        // Step 3: Create Property based on type (for JOINED inheritance)
+        Property property;
+        switch (request.getPropertyType()) {
+            case SINGLE_HOUSE:
+                property = new com.homifybackend.model.SingleHouse();
+                System.out.println("=== Creating SingleHouse");
+                break;
+                
+            case TOWN_HOUSE:
+                property = new com.homifybackend.model.TownHouse();
+                System.out.println("=== Creating TownHouse");
+                break;
+                
+            case APARTMENT:
+                property = new com.homifybackend.model.Apartment();
+                System.out.println("=== Creating Apartment");
+                break;
+                
+            case VILLA:
+                property = new com.homifybackend.model.Villa();
+                System.out.println("=== Creating Villa");
+                break;
+                
+            default:
+                throw new RuntimeException("Unsupported property type: " + request.getPropertyType());
+        }
         
+        // Set common property fields
+        property.setOwner(owner);
         property.setAddress(address);
         property.setYearBuilt(request.getStructureData().getYearBuilt());
         property.setFloors(request.getStructureData().getFloors());
@@ -110,39 +135,10 @@ public class AgentListingService {
         property.setArea(request.getStructureData().getArea());
         property.setDescription(request.getStructureData().getDescription());
         property.setPropertyType(request.getPropertyType().name());
+        
+        // Save property (will save to both properties and subtype table due to JOINED inheritance)
         property = propertyRepository.save(property);
         System.out.println("=== Property saved: " + property.getPropertyId());
-        
-        // Step 4: Insert into subtype table based on propertyType
-        switch (request.getPropertyType()) {
-            case SINGLE_HOUSE:
-                com.homifybackend.model.SingleHouse singleHouse = new com.homifybackend.model.SingleHouse();
-                singleHouse.setPropertyId(property.getPropertyId());
-                singleHouseRepository.save(singleHouse);
-                System.out.println("=== SingleHouse created");
-                break;
-                
-            case TOWN_HOUSE:
-                com.homifybackend.model.TownHouse townHouse = new com.homifybackend.model.TownHouse();
-                townHouse.setPropertyId(property.getPropertyId());
-                townHouseRepository.save(townHouse);
-                System.out.println("=== TownHouse created");
-                break;
-                
-            case APARTMENT:
-                com.homifybackend.model.Apartment apartment = new com.homifybackend.model.Apartment();
-                apartment.setPropertyId(property.getPropertyId());
-                apartmentRepository.save(apartment);
-                System.out.println("=== Apartment created");
-                break;
-                
-            case VILLA:
-                com.homifybackend.model.Villa villa = new com.homifybackend.model.Villa();
-                villa.setPropertyId(property.getPropertyId());
-                villaRepository.save(villa);
-                System.out.println("=== Villa created");
-                break;
-        }
         
         // Step 5: Try agentId=2, fallback to first available
         Long agentIdToUse = 2L;

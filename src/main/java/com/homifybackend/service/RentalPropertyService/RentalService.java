@@ -1,18 +1,21 @@
 package com.homifybackend.service.RentalPropertyService;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.homifybackend.dto.RentalPropertyDTO;
 import com.homifybackend.mapper.RentalPropertyMapper;
-import com.homifybackend.repository.RentalManagerRepository;
-import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;
 import com.homifybackend.model.RentalListingImage;
 import com.homifybackend.model.RentalListingStatus; // ← THÊM IMPORT NÀY
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.homifybackend.repository.AddressRepository;
+import com.homifybackend.repository.CustomerRepository;
+import com.homifybackend.repository.RentalManagerRepository;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
@@ -22,6 +25,7 @@ public class RentalService {
   private final RentalManagerRepository rentalManagerRepository;
   private final RentalPropertyMapper rentalPropertyMapper;
   private final CustomerRepository customerRepository;
+  private final AddressRepository addressRepository;
 
   private static final Long CURRENT_OWNER_ID = 101L;
 
@@ -51,6 +55,11 @@ public class RentalService {
     // Map DTO → entity
     rentalPropertyMapper.applyDtoToEntity(dto, property);
 
+    // Save Address first if it exists and doesn't have an ID yet
+    if (property.getAddress() != null && property.getAddress().getAddressId() == null) {
+      property.setAddress(addressRepository.save(property.getAddress()));
+    }
+
     // Fix relations
     if (property.getRentalListing() != null) {
       property.getRentalListing().setProperty(property);
@@ -72,6 +81,11 @@ public class RentalService {
     if (property == null) return null;
 
     rentalPropertyMapper.applyDtoToEntity(dto, property);
+
+    // Save Address first if it exists and doesn't have an ID yet
+    if (property.getAddress() != null && property.getAddress().getAddressId() == null) {
+      property.setAddress(addressRepository.save(property.getAddress()));
+    }
 
     if (property.getRentalListing() != null && property.getRentalListing().getImages() != null) {
       for (RentalListingImage img : property.getRentalListing().getImages()) {

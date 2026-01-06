@@ -2,7 +2,6 @@ package com.homifybackend.controller.RentalProperty;
 
 import com.homifybackend.dto.RentalPropertyDTO;
 import com.homifybackend.service.RentalPropertyService.RentalService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,12 +12,15 @@ import java.util.List;
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 public class RentalController {
 
-  @Autowired
-  private RentalService rentalService;
+  private final RentalService rentalService;
+
+  public RentalController(RentalService rentalService) {
+    this.rentalService = rentalService;
+  }
 
   @GetMapping("/properties")
-  public List<RentalPropertyDTO> getAllProperties() {
-    return rentalService.getAllProperties();
+  public List<RentalPropertyDTO> getAllProperties(@RequestParam Long ownerId) {
+    return rentalService.getAllProperties(ownerId);
   }
 
   @GetMapping("/properties/{id}")
@@ -28,8 +30,8 @@ public class RentalController {
   }
 
   @PostMapping("/properties")
-  public RentalPropertyDTO addProperty(@RequestBody RentalPropertyDTO dto) {
-    return rentalService.addProperty(dto);
+  public RentalPropertyDTO addProperty(@RequestParam Long ownerId, @RequestBody RentalPropertyDTO dto) {
+    return rentalService.addProperty(ownerId, dto);
   }
 
   @PutMapping("/properties/{id}")

@@ -49,6 +49,7 @@ public class SellRequest {
   @Column(columnDefinition = "TEXT")
   private String neededRepairNotes;
 
+  @Enumerated(EnumType.STRING)
   @Column(length = 20)
   private SellRequestStatus status = SellRequestStatus.PENDING;
 

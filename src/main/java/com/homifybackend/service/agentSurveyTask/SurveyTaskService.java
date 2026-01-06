@@ -34,18 +34,16 @@ public class SurveyTaskService {
     }
 
     // =========================
-// 1) OPPORTUNITY POOL
-// =========================
+    // 1) OPPORTUNITY POOL
+    // =========================
     @Transactional(readOnly = true)
     public List<OpportunityPoolDto> getOpportunityPool(String district) {
-
         List<SellRequest> pending;
 
         if (district == null || district.isBlank() || district.equalsIgnoreCase("ALL")) {
             pending = sellRequestRepository
                     .findOpportunityPoolByStatus(SellRequestStatus.PENDING);
         } else {
-            // ⚠️ yêu cầu repo có method này (bên dưới mình nói)
             pending = sellRequestRepository
                     .findOpportunityPoolByStatusAndDistrict(
                             SellRequestStatus.PENDING,
@@ -151,7 +149,6 @@ public class SurveyTaskService {
         SellRequest sr = sellRequestRepository.findById(sellRequestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy Sell Request"));
 
-        // Fix: Compare Enum directly
         if (sr.getStatus() != SellRequestStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Request không còn khả dụng để nhận");
         }
@@ -173,7 +170,6 @@ public class SurveyTaskService {
     // =========================
     @Transactional
     public int claimAll(Long agentId) {
-        // Fix: Pass Enum directly
         List<SellRequest> pool = sellRequestRepository.findOpportunityPoolByStatus(SellRequestStatus.PENDING);
 
         int count = 0;
@@ -215,8 +211,6 @@ public class SurveyTaskService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy Task"));
 
         task.setNote(note);
-        // Có thể update thêm status nếu cần, ví dụ:
-        // task.setTaskStatus("COMPLETED");
         
         surveyTaskRepository.save(task);
     }

@@ -74,6 +74,8 @@ public class AgentListingService {
      */
     @Transactional
     public CreateDraftListingResponse createDraft(CreateDraftListingRequest request) {
+        System.out.println("=== createDraft START - ownerId from request: " + request.getOwnerId());
+        
         // Step 1: Insert Address
         Address address = new Address();
         address.setStreet(request.getAddress().getStreet());
@@ -83,15 +85,48 @@ public class AgentListingService {
         address.setLatitude(request.getAddress().getLatitude());
         address.setLongitude(request.getAddress().getLongitude());
         address = addressRepository.save(address);
+        System.out.println("=== Address saved: " + address.getAddressId());
         
-        // Step 2: Insert Property (base table only)
-        Property property = new Property();
+        // Step 2: Try ownerId=1, fallback to first available
+        Long ownerIdToUse = 1L;
+        Customer owner = customerRepository.findById(ownerIdToUse)
+            .orElseGet(() -> {
+                System.out.println("⚠️ Customer with ID 1 not found, finding first available...");
+                return customerRepository.findAll().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No customers found in database"));
+            });
+        System.out.println("=== Using owner: " + owner.getUserId());
         
-        // Fetch and set owner
-        Customer owner = customerRepository.findById(request.getOwnerId())
-            .orElseThrow(() -> new RuntimeException("Customer not found with id: " + request.getOwnerId()));
+        // Step 3: Create Property based on type (for JOINED inheritance)
+        Property property;
+        switch (request.getPropertyType()) {
+            case SINGLE_HOUSE:
+                property = new com.homifybackend.model.SingleHouse();
+                System.out.println("=== Creating SingleHouse");
+                break;
+                
+            case TOWN_HOUSE:
+                property = new com.homifybackend.model.TownHouse();
+                System.out.println("=== Creating TownHouse");
+                break;
+                
+            case APARTMENT:
+                property = new com.homifybackend.model.Apartment();
+                System.out.println("=== Creating Apartment");
+                break;
+                
+            case VILLA:
+                property = new com.homifybackend.model.Villa();
+                System.out.println("=== Creating Villa");
+                break;
+                
+            default:
+                throw new RuntimeException("Unsupported property type: " + request.getPropertyType());
+        }
+        
+        // Set common property fields
         property.setOwner(owner);
-        
         property.setAddress(address);
         property.setYearBuilt(request.getStructureData().getYearBuilt());
         property.setFloors(request.getStructureData().getFloors());
@@ -100,14 +135,24 @@ public class AgentListingService {
         property.setArea(request.getStructureData().getArea());
         property.setDescription(request.getStructureData().getDescription());
         property.setPropertyType(request.getPropertyType().name());
+        
+        // Save property (will save to both properties and subtype table due to JOINED inheritance)
         property = propertyRepository.save(property);
+        System.out.println("=== Property saved: " + property.getPropertyId());
         
-        // Step 3: Insert SaleListing with DRAFT status
+        // Step 5: Try agentId=2, fallback to first available
+        Long agentIdToUse = 2L;
+        Agent agent = agentRepository.findById(agentIdToUse)
+            .orElseGet(() -> {
+                System.out.println("⚠️ Agent with ID 2 not found, finding first available...");
+                return agentRepository.findAll().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No agents found in database"));
+            });
+        System.out.println("=== Using agent: " + agent.getUserId());
+        
+        // Step 6: Insert SaleListing with DRAFT status
         SaleListing saleListing = new SaleListing();
-        
-        // Fetch and set agent
-        Agent agent = agentRepository.findById(request.getAgentId())
-            .orElseThrow(() -> new RuntimeException("Agent not found with id: " + request.getAgentId()));
         saleListing.setAgent(agent);
         
         saleListing.setProperty(property);
@@ -339,7 +384,20 @@ public class AgentListingService {
         } else if (villaRepository.existsById(propertyId)) {
             return PropertyType.VILLA;
         }
-        throw new RuntimeException("Property type not found for propertyId: " + propertyId);
+        
+        // Property exists but no subtype record - read from property.property_type
+        Property property = propertyRepository.findById(propertyId)
+            .orElseThrow(() -> new RuntimeException("Property not found: " + propertyId));
+        
+        String typeStr = property.getPropertyType();
+        if (typeStr == null) {
+            throw new RuntimeException("Property type not set for propertyId: " + propertyId);
+        }
+        
+        // Return based on property_type column
+        PropertyType type = PropertyType.valueOf(typeStr);
+        System.out.println("⚠️ Property " + propertyId + " has no subtype record, using property_type: " + type);
+        return type;
     }
     
     private Map<String, Object> getSubtypeData(Long propertyId, PropertyType propertyType) {

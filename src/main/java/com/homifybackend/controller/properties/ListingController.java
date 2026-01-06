@@ -15,13 +15,10 @@ import java.util.List;
 @RequestMapping("/api/listings")
 public class ListingController {
     private final ListingService listingService;
-    private final SaleListingService saleListingService;
-    private final RentalListingService rentalListingService;
+
 
     public ListingController(ListingService listingService1, SaleListingService saleListingService, RentalListingService rentalListingService) {
         this.listingService = listingService1;
-        this.saleListingService = saleListingService;
-        this.rentalListingService = rentalListingService;
     }
 
     @GetMapping

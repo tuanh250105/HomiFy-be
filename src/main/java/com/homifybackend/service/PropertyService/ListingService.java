@@ -20,14 +20,12 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ListingService {
     private final PropertyReposity propertyReposity;
-    private final RoomReposity roomReposity;
     private final SaleListingReposity saleListingReposity;
     private final RentalListingReposity rentalListingReposity;
     private final  ListingMapper listingMapper;
     private final ListingDetailMapper listingDetailMapper;
     public ListingService(PropertyReposity propertyReposity, RoomReposity roomReposity, SaleListingReposity saleListingReposity, RentalListingReposity rentalListingReposity, ListingMapper listingMapper, ListingDetailMapper listingDetailMapper) {
         this.propertyReposity = propertyReposity;
-        this.roomReposity = roomReposity;
         this.saleListingReposity = saleListingReposity;
         this.rentalListingReposity = rentalListingReposity;
         this.listingMapper = listingMapper;
@@ -38,9 +36,7 @@ public class ListingService {
             Double minLat, Double maxLat, Double minLng, Double maxLng, Integer zoom,
             String category, Double minPrice, Double maxPrice, String propertyType, String keyword) {
 
-        String propertyType1 = (propertyType == null || propertyType.isBlank())
-                ? null
-                : propertyType.toUpperCase();
+        String propertyType1 = (propertyType == null || propertyType.isBlank()) ? null : propertyType.toUpperCase();
 
         return switch (category.toUpperCase()) {
             case "BUY" -> saleListingReposity.findByMapArea(
@@ -71,11 +67,7 @@ public class ListingService {
 
     public ListingDetailResponse getListingDetail(ListingType type, Long propertyId) {
 
-        // 1️⃣ Property
-        Property property = propertyReposity.findById(propertyId)
-                .orElseThrow(() -> new RuntimeException("Property not found"));
-
-
+        Property property = propertyReposity.findById(propertyId).orElseThrow(() -> new RuntimeException("Property not found"));
         SaleListing sale = null;
         RentalListing rent = null;
 
@@ -84,20 +76,12 @@ public class ListingService {
                     .findByProperty_PropertyId(propertyId)
                     .orElseThrow(() -> new RuntimeException("Sale listing not found"));
         }
-
         if (type == ListingType.RENT) {
             rent = rentalListingReposity
                     .findByProperty_PropertyId(propertyId)
                     .orElseThrow(() -> new RuntimeException("Rental listing not found"));
         }
-
-        // 4️⃣ Map response
-        return listingDetailMapper.toResponse(
-                type,
-                property,
-                sale,
-                rent
-        );
+        return listingDetailMapper.toResponse(type, property, sale, rent);
     }
 
 

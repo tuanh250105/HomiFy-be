@@ -36,15 +36,9 @@ public class AgentListingController {
      */
     @PostMapping("/draft")
     public ResponseEntity<CreateDraftListingResponse> createDraft(@Valid @RequestBody CreateDraftListingRequest request) {
-        // Auto-assign ownerId and agentId if not provided (temporary for development)
-        // TODO: Replace with authentication.getPrincipal() when JWT is implemented
-        if (request.getOwnerId() == null) {
-            request.setOwnerId(1L); // Default test customer
-        }
-        if (request.getAgentId() == null) {
-            request.setAgentId(2L); // Default test agent
-        }
+        System.out.println("=== Controller received request with ownerId=" + request.getOwnerId() + ", agentId=" + request.getAgentId());
         
+        // Let service handle finding owner/agent from database
         CreateDraftListingResponse response = agentListingService.createDraft(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

@@ -1,15 +1,14 @@
 package com.homifybackend.accountSetting_myListings.controller;
 
+import com.homifybackend.accountSetting_myListings.service.AccountSettingService;
 import com.homifybackend.dto.AccountMeResponse;
 import com.homifybackend.dto.ChangePasswordRequest;
 import com.homifybackend.dto.UpdateAccountMeRequest;
-import com.homifybackend.accountSetting_myListings.service.AccountSettingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Canonical Account Settings endpoints used by the new FE.
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -19,23 +18,29 @@ public class MeController {
 
     @GetMapping("/me")
     public AccountMeResponse me(@RequestHeader(value = "X-User-Id", required = false) Long uid) {
-        long userId = (uid != null ? uid : 9L);
-        return service.getMe(userId);
+        if (uid == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        return service.getMe(uid);
     }
 
     @PutMapping("/me")
     public AccountMeResponse update(
             @RequestHeader(value = "X-User-Id", required = false) Long uid,
             @RequestBody UpdateAccountMeRequest req) {
-        long userId = (uid != null ? uid : 9L);
-        return service.updateMe(userId, req);
+        if (uid == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        return service.updateMe(uid, req);
     }
 
     @PutMapping("/me/password")
     public void changePassword(
             @RequestHeader(value = "X-User-Id", required = false) Long uid,
             @RequestBody ChangePasswordRequest req) {
-        long userId = (uid != null ? uid : 9L);
-        service.changePassword(userId, req);
+        if (uid == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        service.changePassword(uid, req);
     }
 }

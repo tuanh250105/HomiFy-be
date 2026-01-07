@@ -78,7 +78,7 @@ public class AgentProfileController {
 
         if (uid == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
 
-        service.delete(id); // ✅ đúng signature hiện tại: delete(Long)
+        service.delete(id);
     }
 
     @PatchMapping("/listings/{id}/status")
@@ -89,7 +89,7 @@ public class AgentProfileController {
 
         if (uid == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
 
-        service.changeStatus(id, status); // ✅ đúng signature hiện tại: changeStatus(Long, String)
+        service.changeStatus(id, status);
     }
 
 }

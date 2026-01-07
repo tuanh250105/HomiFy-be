@@ -49,4 +49,16 @@ public interface SaleListingRepository extends JpaRepository<SaleListing, Long> 
 
     @Query("SELECT s FROM SaleListing s LEFT JOIN FETCH s.images WHERE s.id = :id")
     Optional<SaleListing> findByIdWithImages(@Param("id") Long id);
-}
+
+    @Query("SELECT sl FROM SaleListing sl " +
+            "LEFT JOIN FETCH sl.property p " +
+            "LEFT JOIN FETCH p.address " +
+            "LEFT JOIN FETCH p.owner " +
+            "LEFT JOIN FETCH p.securityFeatures " +
+            "LEFT JOIN FETCH p.entertainmentFeatures " +
+            "LEFT JOIN FETCH p.outdoorFeatures " +
+            "LEFT JOIN FETCH p.transportRating " +
+            "LEFT JOIN FETCH p.applianceRating " +
+            "LEFT JOIN FETCH sl.agent " +
+            "WHERE sl.agent.userId = :agentId")
+    List<SaleListing> findByAgent_UserIdWithFeatures(@Param("agentId") Long agentId);}

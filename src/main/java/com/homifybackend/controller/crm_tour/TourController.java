@@ -2,9 +2,12 @@ package com.homifybackend.controller.crm_tour;
 
 import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Tour;
+import com.homifybackend.model.User;
 import com.homifybackend.service.crm_tour.TourService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,10 +31,12 @@ public class TourController {
         return ResponseEntity.ok(tours);
     }
 
-    // 2. Tạo tour mới từ khách hàng
-    @PostMapping
-    public ResponseEntity<Tour> create(@RequestBody TourDTO tourDTO) {
-        Tour savedTour = tourService.createTourFromDTO(tourDTO);
+    // 2. Tạo tour mới từ khách hàng || KHÔI
+    @PostMapping("/{listingId}/tour-request")
+    public ResponseEntity<Tour> create(@RequestHeader("Authorization") String token, @PathVariable Long listingId, @RequestBody TourDTO tourDTO) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User requester = (User) auth.getPrincipal();
+        Tour savedTour = tourService.createTourFromDTO(requester, listingId, tourDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTour);
     }
 

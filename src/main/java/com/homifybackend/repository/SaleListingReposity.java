@@ -33,4 +33,5 @@ public interface SaleListingReposity extends JpaRepository<SaleListing, Long> {
             @Param("propertyType") String propertyType
     );
     Optional<SaleListing> findByProperty_PropertyId(Long propertyId);
+
 }

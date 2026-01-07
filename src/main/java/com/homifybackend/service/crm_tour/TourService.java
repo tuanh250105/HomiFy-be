@@ -4,9 +4,11 @@ import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Tour;
 import com.homifybackend.model.SaleListing;
+import com.homifybackend.model.User;
 import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.repository.TourRepository;
 import com.homifybackend.repository.SaleListingRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,38 +39,18 @@ public class TourService {
     }
 
     @Transactional
-    public Tour createTourFromDTO(TourDTO dto) {
+    public Tour createTourFromDTO(User requester, Long listingId, TourDTO dto) {
         Tour tour = new Tour();
-        tour.setBuyer(dto.getBuyerName());
+        tour.setRequester(requester);
         tour.setStatus("PENDING");
         tour.setRescheduleCount(0);
 
-        if (dto.getPreferredTimes() != null && !dto.getPreferredTimes().isEmpty()) {
-            tour.setDate(dto.getPreferredTimes().get(0).getDate());
-            tour.setTime(dto.getPreferredTimes().get(0).getTime());
+        if (dto.getDate() != null && dto.getTime() != null) {
+            tour.setDate(dto.getDate());
+            tour.setTime(dto.getTime());
         }
-
-        // --- PHẦN GÁN SALE LISTING ĐỂ BIẾT AGENT NÀO QUẢN LÝ ---
-        if (dto.getListingId() != null) {
-            saleListingRepository.findById(dto.getListingId()).ifPresent(listing -> {
-                tour.setSaleListing(listing);
-                // Gán property string để hiển thị nếu cần
-                if (listing.getProperty() != null) {
-                    tour.setProperty(listing.getProperty().getPropertyType());
-                }
-            });
-        }
-        // -----------------------------------------------------
-
-        customerRepository.findByFullName(dto.getBuyerName()).orElseGet(() -> {
-            Customer newCustomer = new Customer();
-            newCustomer.setFullName(dto.getBuyerName());
-            newCustomer.setPhoneNumber(dto.getBuyerPhone());
-            newCustomer.setPipelineStatus("leads");
-            newCustomer.setInterestScore(0);
-            return customerRepository.save(newCustomer);
-        });
-
+        SaleListing saleListing = saleListingRepository.findById(listingId).orElseThrow(() -> new EntityNotFoundException("SaleListing not found"));;
+        tour.setSaleListing(saleListing);
         return tourRepository.save(tour);
     }
 
@@ -96,7 +78,7 @@ public class TourService {
             if (data.getTime() != null) existingTour.setTime(data.getTime());
             if (data.getRescheduleCount() != null) existingTour.setRescheduleCount(data.getRescheduleCount());
 
-            customerRepository.findByFullName(existingTour.getBuyer()).ifPresent(customer -> {
+            customerRepository.findByFullName(existingTour.getRequester().getFullName()).ifPresent(customer -> {
                 int currentScore = customer.getInterestScore();
                 int scoreChange = 0;
 

@@ -57,11 +57,11 @@ public class Property {
     )
     private List<Room> rooms = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "transport_rating_id")
     private TransportRating transportRating;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "appliance_rating_id")
     private ApplianceRating applianceRating;
 

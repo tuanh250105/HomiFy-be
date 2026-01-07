@@ -24,7 +24,7 @@ import com.homifybackend.service.salelisting.AgentListingService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/agentlistings")
+@RequestMapping("/agentlistings")
 public class AgentListingController {
     
     @Autowired

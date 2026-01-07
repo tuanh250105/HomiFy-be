@@ -1,16 +1,20 @@
 package com.homifybackend.dto;
 
+import java.util.Map;
+
 import com.homifybackend.model.PropertyType;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-
-import java.util.Map;
 
 public class CreateDraftListingRequest {
     
     private Long ownerId; // Optional - will be auto-assigned if null
     
     private Long agentId; // Optional - will be auto-assigned if null
+    
+    // Nếu có sellRequestId, sẽ lấy thông tin từ SellRequest (Survey Task)
+    private Long sellRequestId;
     
     @NotNull(message = "Property type is required")
     private PropertyType propertyType;
@@ -157,6 +161,14 @@ public class CreateDraftListingRequest {
     
     public void setAgentId(Long agentId) {
         this.agentId = agentId;
+    }
+    
+    public Long getSellRequestId() {
+        return sellRequestId;
+    }
+    
+    public void setSellRequestId(Long sellRequestId) {
+        this.sellRequestId = sellRequestId;
     }
     
     public PropertyType getPropertyType() {

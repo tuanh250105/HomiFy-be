@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.homifybackend.auth.repository.AccountRepository;
 import com.homifybackend.dto.AddressDTO;
 import com.homifybackend.dto.CreateDraftListingRequest;
 import com.homifybackend.dto.CreateDraftListingResponse;
@@ -30,6 +34,7 @@ import com.homifybackend.repository.ApartmentRepository;
 import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.repository.PropertyRepository;
 import com.homifybackend.repository.SaleListingRepository;
+import com.homifybackend.repository.SellRequestRepository;
 import com.homifybackend.repository.SingleHouseRepository;
 import com.homifybackend.repository.TownHouseRepository;
 import com.homifybackend.repository.VillaRepository;
@@ -64,6 +69,12 @@ public class AgentListingService {
     @Autowired
     private AgentRepository agentRepository;
     
+    @Autowired
+    private AccountRepository accountRepository;
+    
+    @Autowired
+    private SellRequestRepository sellRequestRepository;
+    
     /**
      * 1. Create Draft Listing
      * Transaction bao gồm 4 bước:
@@ -74,29 +85,136 @@ public class AgentListingService {
      */
     @Transactional
     public CreateDraftListingResponse createDraft(CreateDraftListingRequest request) {
-        System.out.println("=== createDraft START - ownerId from request: " + request.getOwnerId());
+        System.out.println("=== createDraft START - sellRequestId: " + request.getSellRequestId());
         
-        // Step 1: Insert Address
-        Address address = new Address();
-        address.setStreet(request.getAddress().getStreet());
-        address.setCity(request.getAddress().getCity());
-        address.setProvince(request.getAddress().getProvince());
-        address.setNation(request.getAddress().getNation());
-        address.setLatitude(request.getAddress().getLatitude());
-        address.setLongitude(request.getAddress().getLongitude());
-        address = addressRepository.save(address);
-        System.out.println("=== Address saved: " + address.getAddressId());
+        Address address;
+        Customer owner;
+        Integer beds = null;
+        Integer baths = null;
+        Integer floors = null;
+        Integer yearBuilt = null;
+        Double area = null;
+        String description = null;
         
-        // Step 2: Try ownerId=1, fallback to first available
-        Long ownerIdToUse = 1L;
-        Customer owner = customerRepository.findById(ownerIdToUse)
-            .orElseGet(() -> {
-                System.out.println("⚠️ Customer with ID 1 not found, finding first available...");
-                return customerRepository.findAll().stream()
+        // Nếu có sellRequestId, lấy thông tin từ SellRequest (Survey Task)
+        if (request.getSellRequestId() != null) {
+            System.out.println("=== Loading data from SellRequest: " + request.getSellRequestId());
+            com.homifybackend.model.SellRequest sellRequest = sellRequestRepository.findById(request.getSellRequestId())
+                .orElseThrow(() -> new RuntimeException("SellRequest not found with id: " + request.getSellRequestId()));
+            
+            // Lấy address từ SellRequest - Use getter
+            try {
+                address = (Address) sellRequest.getClass().getMethod("getAddress").invoke(sellRequest);
+                if (address != null) {
+                    System.out.println("=== Using address from SellRequest: " + address.getAddressId());
+                } else {
+                    throw new Exception("Address is null");
+                }
+            } catch (Exception e) {
+                // Fallback: tạo address mới từ request
+                address = new Address();
+                if (request.getAddress() != null) {
+                    address.setStreet(request.getAddress().getStreet());
+                    address.setCity(request.getAddress().getCity());
+                    address.setProvince(request.getAddress().getProvince());
+                    address.setNation(request.getAddress().getNation());
+                    address.setLatitude(request.getAddress().getLatitude());
+                    address.setLongitude(request.getAddress().getLongitude());
+                }
+                address = addressRepository.save(address);
+                System.out.println("=== Address created: " + address.getAddressId());
+            }
+            
+            // Lấy owner từ SellRequest - Use reflection
+            try {
+                owner = (Customer) sellRequest.getClass().getMethod("getOwner").invoke(sellRequest);
+                if (owner != null) {
+                    System.out.println("=== Using owner from SellRequest: " + owner.getUserId());
+                } else {
+                    throw new Exception("Owner is null");
+                }
+            } catch (Exception e) {
+                // Fallback
+                owner = customerRepository.findAll().stream()
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("No customers found in database"));
-            });
-        System.out.println("=== Using owner: " + owner.getUserId());
+                System.out.println("=== Using fallback owner: " + owner.getUserId());
+            }
+            
+            // Lấy thông tin property từ SellRequest - Use reflection for all fields
+            try {
+                beds = (Integer) sellRequest.getClass().getMethod("getEstBeds").invoke(sellRequest);
+                baths = (Integer) sellRequest.getClass().getMethod("getEstBaths").invoke(sellRequest);
+                floors = (Integer) sellRequest.getClass().getMethod("getFloors").invoke(sellRequest);
+                area = (Double) sellRequest.getClass().getMethod("getEstimatedArea").invoke(sellRequest);
+            } catch (Exception e) {
+                System.out.println("⚠️ Error getting property data: " + e.getMessage());
+            }
+            
+            // Build description từ survey data
+            StringBuilder desc = new StringBuilder();
+            try {
+                String livingRoom = (String) sellRequest.getClass().getMethod("getLivingRoomCondition").invoke(sellRequest);
+                if (livingRoom != null && !livingRoom.isEmpty()) {
+                    desc.append("Living Room: ").append(livingRoom).append(". ");
+                }
+                String kitchen = (String) sellRequest.getClass().getMethod("getKitchenCondition").invoke(sellRequest);
+                if (kitchen != null && !kitchen.isEmpty()) {
+                    desc.append("Kitchen: ").append(kitchen).append(". ");
+                }
+                String interior = (String) sellRequest.getClass().getMethod("getInteriorCondition").invoke(sellRequest);
+                if (interior != null && !interior.isEmpty()) {
+                    desc.append("Interior: ").append(interior).append(". ");
+                }
+                String exterior = (String) sellRequest.getClass().getMethod("getExteriorCondition").invoke(sellRequest);
+                if (exterior != null && !exterior.isEmpty()) {
+                    desc.append("Exterior: ").append(exterior).append(". ");
+                }
+                String repairs = (String) sellRequest.getClass().getMethod("getNeededRepairNotes").invoke(sellRequest);
+                if (repairs != null && !repairs.isEmpty()) {
+                    desc.append("Repairs needed: ").append(repairs);
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Error building description: " + e.getMessage());
+            }
+            description = desc.length() > 0 ? desc.toString() : null;
+            
+            // Lấy yearBuilt từ request nếu có
+            if (request.getStructureData() != null) {
+                yearBuilt = request.getStructureData().getYearBuilt();
+            }
+            
+            System.out.println("=== Pre-filled from Survey: beds=" + beds + ", baths=" + baths + ", area=" + area);
+        } else {
+            // Tạo mới address từ request
+            address = new Address();
+            address.setStreet(request.getAddress().getStreet());
+            address.setCity(request.getAddress().getCity());
+            address.setProvince(request.getAddress().getProvince());
+            address.setNation(request.getAddress().getNation());
+            address.setLatitude(request.getAddress().getLatitude());
+            address.setLongitude(request.getAddress().getLongitude());
+            address = addressRepository.save(address);
+            System.out.println("=== Address saved: " + address.getAddressId());
+            
+            // Try ownerId=1, fallback to first available
+            Long ownerIdToUse = 1L;
+            owner = customerRepository.findById(ownerIdToUse)
+                .orElseGet(() -> {
+                    System.out.println("⚠️ Customer with ID 1 not found, finding first available...");
+                    return customerRepository.findAll().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("No customers found in database"));
+                });
+            System.out.println("=== Using owner: " + owner.getUserId());
+            
+            // Lấy từ request
+            beds = request.getStructureData().getBeds();
+            baths = request.getStructureData().getBaths();
+            floors = request.getStructureData().getFloors();
+            area = request.getStructureData().getArea();
+            description = request.getStructureData().getDescription();
+        }
         
         // Step 3: Create Property based on type (for JOINED inheritance)
         Property property;
@@ -128,28 +246,21 @@ public class AgentListingService {
         // Set common property fields
         property.setOwner(owner);
         property.setAddress(address);
-        property.setYearBuilt(request.getStructureData().getYearBuilt());
-        property.setFloors(request.getStructureData().getFloors());
-        property.setBeds(request.getStructureData().getBeds());
-        property.setBaths(request.getStructureData().getBaths());
-        property.setArea(request.getStructureData().getArea());
-        property.setDescription(request.getStructureData().getDescription());
+        property.setYearBuilt(yearBuilt);
+        property.setFloors(floors);
+        property.setBeds(beds);
+        property.setBaths(baths);
+        property.setArea(area);
+        property.setDescription(description);
         property.setPropertyType(request.getPropertyType().name());
         
         // Save property (will save to both properties and subtype table due to JOINED inheritance)
         property = propertyRepository.save(property);
         System.out.println("=== Property saved: " + property.getPropertyId());
         
-        // Step 5: Try agentId=2, fallback to first available
-        Long agentIdToUse = 2L;
-        Agent agent = agentRepository.findById(agentIdToUse)
-            .orElseGet(() -> {
-                System.out.println("⚠️ Agent with ID 2 not found, finding first available...");
-                return agentRepository.findAll().stream()
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No agents found in database"));
-            });
-        System.out.println("=== Using agent: " + agent.getUserId());
+        // Step 5: Get agent from logged-in user
+        Agent agent = getCurrentAgent();
+        System.out.println("=== Using logged-in agent: " + agent.getUserId());
         
         // Step 6: Insert SaleListing with DRAFT status
         SaleListing saleListing = new SaleListing();
@@ -178,6 +289,14 @@ public class AgentListingService {
         // Find listing
         SaleListing saleListing = saleListingRepository.findById(listingId)
             .orElseThrow(() -> new RuntimeException("Listing not found with id: " + listingId));
+        
+        // Verify ownership - chỉ agent sở hữu listing mới được update
+        Agent currentAgent = getCurrentAgent();
+        if (!saleListing.getAgent().getUserId().equals(currentAgent.getUserId())) {
+            throw new RuntimeException("Access denied: You can only update your own listings. Listing belongs to agent " 
+                + saleListing.getAgent().getUserId() + " but you are agent " + currentAgent.getUserId());
+        }
+        System.out.println("=== Agent " + currentAgent.getUserId() + " updating listing " + listingId);
         
         Property property = saleListing.getProperty();
         
@@ -348,6 +467,14 @@ public class AgentListingService {
         SaleListing saleListing = saleListingRepository.findById(listingId)
             .orElseThrow(() -> new RuntimeException("Listing not found with id: " + listingId));
         
+        // Verify ownership - chỉ agent sở hữu listing mới được submit
+        Agent currentAgent = getCurrentAgent();
+        if (!saleListing.getAgent().getUserId().equals(currentAgent.getUserId())) {
+            throw new RuntimeException("Access denied: You can only submit your own listings. Listing belongs to agent " 
+                + saleListing.getAgent().getUserId() + " but you are agent " + currentAgent.getUserId());
+        }
+        System.out.println("=== Agent " + currentAgent.getUserId() + " submitting listing " + listingId);
+        
         Property property = saleListing.getProperty();
         
         // Validate structure data
@@ -373,6 +500,64 @@ public class AgentListingService {
     }
     
     // Helper methods
+    
+    /**
+     * Get current authenticated username from SecurityContext
+     */
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        // Check if authentication exists and is not anonymous
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Authentication required: Please login to access this resource");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Check for anonymous user
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new RuntimeException("Authentication required: Please provide a valid JWT token in Authorization header");
+        }
+        
+        // Extract username from UserDetails
+        if (principal instanceof UserDetails) {
+            String username = ((UserDetails) principal).getUsername();
+            if (username == null || username.trim().isEmpty() || "anonymousUser".equals(username)) {
+                throw new RuntimeException("Invalid authentication: Username is empty or anonymous");
+            }
+            return username;
+        }
+        
+        // Fallback for other principal types
+        String username = principal.toString();
+        if ("anonymousUser".equals(username)) {
+            throw new RuntimeException("Authentication required: Please provide a valid JWT token in Authorization header");
+        }
+        
+        return username;
+    }
+    
+    /**
+     * Get current authenticated Agent
+     */
+    private Agent getCurrentAgent() {
+        String username = getCurrentUsername();
+        System.out.println("=== Getting agent for username: " + username);
+        
+        // Find account by username
+        com.homifybackend.model.Account account = accountRepository.findByUsernameWithUser(username)
+            .orElseThrow(() -> new RuntimeException("Account not found for username: " + username));
+        
+        // Get userId from account
+        Long userId = account.getUser().getUserId();
+        System.out.println("=== Found userId: " + userId);
+        
+        // Get Agent by userId
+        Agent agent = agentRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Agent not found for userId: " + userId + ". User must be an Agent to create listings."));
+        
+        return agent;
+    }
     
     private PropertyType determinePropertyType(Long propertyId) {
         if (singleHouseRepository.existsById(propertyId)) {
@@ -498,6 +683,19 @@ public class AgentListingService {
             .toList();
         System.out.println("=== Final responses: " + responses.size());
         return responses;
+    }
+    
+    /**
+     * 6. Get My Listings
+     * Lấy danh sách listings của agent hiện tại đang đăng nhập
+     */
+    public List<ListingResponse> getMyListings(Long ownerId, String status) {
+        Agent currentAgent = getCurrentAgent();
+        Long agentId = currentAgent.getUserId();
+        System.out.println("=== getMyListings called for agentId=" + agentId + ", ownerId=" + ownerId + ", status=" + status);
+        
+        // Reuse getAllListings with current agent's ID
+        return getAllListings(agentId, ownerId, status);
     }
     
     // Utility methods for extracting values from Map

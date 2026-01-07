@@ -29,14 +29,8 @@ public class ListingDetailMapper {
         Map<String, Object> details = extractSubtypeDetails(property);
         List<RoomDTO> roomDTOs = mapRooms(property.getRooms());
 
-
-        Object listing = (type == ListingType.BUY)
-                ? mapSale(sale)
-                : mapRental(rent);
-
-        return new ListingDetailResponse(
-                type, core, details, roomDTOs, listing
-        );
+        Object listing = (type == ListingType.BUY) ? mapSale(sale) : mapRental(rent);
+        return new ListingDetailResponse(type, core, details, roomDTOs, listing);
     }
 //    BigDecimal currentPrice,
 //    BigDecimal estimateValue,
@@ -48,11 +42,10 @@ public class ListingDetailMapper {
         if (s == null) return null;
 
         List<ListingImageDTO> images = s.getImages() == null
-                ? List.of()
-                : s.getImages().stream()
-                .map(img -> new ListingImageDTO(img.getId(), img.getUrl(), img.getIsPrimary())).toList();
+                ? List.of() : s.getImages().stream().map(img -> new ListingImageDTO(img.getId(), img.getUrl(), img.getIsPrimary())).toList();
 
         return new SaleListingDTO(
+                s.getId(),
                 s.getCurrentPrice(),
                 s.getEstimateValue(),
                 s.getSaleStatus().name(),
@@ -73,6 +66,7 @@ public class ListingDetailMapper {
     private RentalListingDTO mapRental(RentalListing r) {
         if (r == null) return null;
         return new RentalListingDTO(
+                r.getId(),
                 r.getMonthlyRent(),
                 r.getDepositAmount(),
                 r.getLeaseTermMonths(),
@@ -178,7 +172,6 @@ public class ListingDetailMapper {
                         r.getLength(),
                         r.getHeight(),
                         r.getArea()
-                ))
-                .toList();
+                )).toList();
     }
 }

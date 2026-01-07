@@ -22,7 +22,7 @@ public class ListingController {
     private final ListingService listingService;
 
 
-    public ListingController(ListingService listingService1, SaleListingService saleListingService, RentalListingService rentalListingService) {
+    public ListingController(ListingService listingService1) {
         this.listingService = listingService1;
     }
 

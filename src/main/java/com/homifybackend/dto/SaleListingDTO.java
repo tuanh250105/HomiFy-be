@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record SaleListingDTO(
+        Long listingId,
         BigDecimal currentPrice,
         BigDecimal estimateValue,
         String saleStatus,

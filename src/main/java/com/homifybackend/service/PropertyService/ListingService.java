@@ -67,21 +67,22 @@ public class ListingService {
 
     public ListingDetailResponse getListingDetail(ListingType type, Long propertyId) {
 
-        Property property = propertyReposity.findById(propertyId).orElseThrow(() -> new RuntimeException("Property not found"));
-        SaleListing sale = null;
-        RentalListing rent = null;
+//        Property property = propertyReposity.findById(propertyId).orElseThrow(() -> new RuntimeException("Property not found"));
 
         if (type == ListingType.BUY) {
-            sale = saleListingReposity
+            SaleListing sale = saleListingReposity
                     .findByProperty_PropertyId(propertyId)
                     .orElseThrow(() -> new RuntimeException("Sale listing not found"));
+            return listingDetailMapper.toResponse(type, sale.getProperty(), sale, null);
         }
+
         if (type == ListingType.RENT) {
-            rent = rentalListingReposity
+            RentalListing rent = rentalListingReposity
                     .findByProperty_PropertyId(propertyId)
                     .orElseThrow(() -> new RuntimeException("Rental listing not found"));
+            return listingDetailMapper.toResponse(type, rent.getProperty(), null, rent);
         }
-        return listingDetailMapper.toResponse(type, property, sale, rent);
+        throw new IllegalArgumentException("Invalid listing type");
     }
 
 

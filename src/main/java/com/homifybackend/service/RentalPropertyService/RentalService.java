@@ -10,7 +10,7 @@ import com.homifybackend.mapper.RentalPropertyMapper;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;
 import com.homifybackend.model.RentalListingImage;
-import com.homifybackend.model.RentalListingStatus; // ← THÊM IMPORT NÀY
+import com.homifybackend.model.RentalListingStatus;
 import com.homifybackend.repository.AddressRepository;
 import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.repository.RentalManagerRepository;
@@ -27,11 +27,9 @@ public class RentalService {
   private final CustomerRepository customerRepository;
   private final AddressRepository addressRepository;
 
-  private static final Long CURRENT_OWNER_ID = 101L;
-
   // READ
-  public List<RentalPropertyDTO> getAllProperties() {
-    return rentalManagerRepository.findAllByOwnerIdWithFullRelations(CURRENT_OWNER_ID)
+  public List<RentalPropertyDTO> getAllProperties(Long ownerId) {
+    return rentalManagerRepository.findAllByOwnerIdWithFullRelations(ownerId)
         .stream()
         .map(rentalPropertyMapper::toDto)
         .toList();
@@ -44,23 +42,19 @@ public class RentalService {
   }
 
   // ADD
-  public RentalPropertyDTO addProperty(RentalPropertyDTO dto) {
+  public RentalPropertyDTO addProperty(Long ownerId, RentalPropertyDTO dto) {
     Property property = rentalPropertyMapper.createEntityFromDto(dto);
 
-    // Set owner entity
-    Customer owner = customerRepository.findById(CURRENT_OWNER_ID)
-        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy owner với ID: " + CURRENT_OWNER_ID));
+    Customer owner = customerRepository.findById(ownerId)
+        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy owner với ID: " + ownerId));
     property.setOwner(owner);
 
-    // Map DTO → entity
     rentalPropertyMapper.applyDtoToEntity(dto, property);
 
-    // Save Address first if it exists and doesn't have an ID yet
     if (property.getAddress() != null && property.getAddress().getAddressId() == null) {
       property.setAddress(addressRepository.save(property.getAddress()));
     }
 
-    // Fix relations
     if (property.getRentalListing() != null) {
       property.getRentalListing().setProperty(property);
 
@@ -82,7 +76,6 @@ public class RentalService {
 
     rentalPropertyMapper.applyDtoToEntity(dto, property);
 
-    // Save Address first if it exists and doesn't have an ID yet
     if (property.getAddress() != null && property.getAddress().getAddressId() == null) {
       property.setAddress(addressRepository.save(property.getAddress()));
     }
@@ -102,7 +95,7 @@ public class RentalService {
     Property p = rentalManagerRepository.findById(id).orElse(null);
     if (p == null || p.getRentalListing() == null) return false;
 
-    p.getRentalListing().setRentalStatus(RentalListingStatus.INACTIVE); // ← SỬA Ở ĐÂY
+    p.getRentalListing().setRentalStatus(RentalListingStatus.INACTIVE);
     rentalManagerRepository.save(p);
     return true;
   }

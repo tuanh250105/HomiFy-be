@@ -22,8 +22,6 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.homifybackend.auth.dto.UserResponse;
 import com.homifybackend.auth.repository.AccountRepository;
-import com.homifybackend.repository.AgentRepository;
-import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.auth.repository.UserRepository;
 import com.homifybackend.auth.security.CustomUserDetailsService;
 import com.homifybackend.auth.security.JwtService;
@@ -32,6 +30,8 @@ import com.homifybackend.model.Agent;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Role;
 import com.homifybackend.model.User;
+import com.homifybackend.repository.AgentRepository;
+import com.homifybackend.repository.CustomerRepository;
 
 @Service
 public class GoogleOAuthService {
@@ -246,7 +246,6 @@ public class GoogleOAuthService {
 
         User user = account.getUser();
         return UserResponse.builder()
-                .id(user.getUserId())
                 .email(account.getEmail())
                 .username(account.getUsername())
                 .fullName(user.getFullName())

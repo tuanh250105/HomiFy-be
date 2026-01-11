@@ -63,6 +63,23 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Extract user ID from JWT token.
+     * The subject now contains user_id instead of username for better security.
+     */
+    public Long extractUserId(String token) {
+        try {
+            String userId = extractClaim(token, Claims::getSubject);
+            return userId != null ? Long.parseLong(userId) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * @deprecated Use extractUserId instead. Kept for backward compatibility.
+     */
+    @Deprecated
     public String extractUsername(String token) {
         try {
             return extractClaim(token, Claims::getSubject);
@@ -98,28 +115,44 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), expiration);
+        String subject = getUserIdentifier(userDetails);
+        return createToken(claims, subject, expiration);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return createToken(extraClaims, userDetails.getUsername(), expiration);
+        String subject = getUserIdentifier(userDetails);
+        return createToken(extraClaims, subject, expiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), refreshExpiration);
+        String subject = getUserIdentifier(userDetails);
+        return createToken(claims, subject, refreshExpiration);
     }
 
     public String generateToken(UserDetails userDetails, boolean rememberMe) {
         Map<String, Object> claims = new HashMap<>();
+        String subject = getUserIdentifier(userDetails);
         Long tokenExpiration = rememberMe ? rememberMeExpiration : expiration;
-        return createToken(claims, userDetails.getUsername(), tokenExpiration);
+        return createToken(claims, subject, tokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails, boolean rememberMe) {
         Map<String, Object> claims = new HashMap<>();
+        String subject = getUserIdentifier(userDetails);
         Long tokenExpiration = rememberMe ? rememberMeExpiration : refreshExpiration;
-        return createToken(claims, userDetails.getUsername(), tokenExpiration);
+        return createToken(claims, subject, tokenExpiration);
+    }
+
+    /**
+     * Get user identifier for JWT subject.
+     * Uses user_id from CustomUserDetails if available, otherwise falls back to username.
+     */
+    private String getUserIdentifier(UserDetails userDetails) {
+        if (userDetails instanceof CustomUserDetails) {
+            return ((CustomUserDetails) userDetails).getUserIdAsString();
+        }
+        return userDetails.getUsername();
     }
 
     private String createToken(Map<String, Object> claims, String subject, Long expiration) {
@@ -133,6 +166,12 @@ public class JwtService {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
+        final Long userId = extractUserId(token);
+        if (userDetails instanceof CustomUserDetails) {
+            Long userDetailsId = ((CustomUserDetails) userDetails).getUserId();
+            return (userId.equals(userDetailsId) && !isTokenExpired(token));
+        }
+        // Fallback for backward compatibility
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }

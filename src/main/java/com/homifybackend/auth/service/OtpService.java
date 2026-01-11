@@ -5,17 +5,22 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.homifybackend.model.Otp;
+import com.homifybackend.auth.config.AuthConstants;
 import com.homifybackend.auth.repository.OtpRepository;
+import com.homifybackend.model.Otp;
 
 @Service
 public class OtpService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OtpService.class);
 
     @Autowired
     private OtpRepository otpRepository;
@@ -61,27 +66,15 @@ public class OtpService {
         Otp savedOtp = otpRepository.save(otp);
 
         // Send OTP via email
-        System.out.println("=== Sending OTP email ===");
-        System.out.println("Email: " + email);
-        System.out.println("OTP Code: " + otpCode);
-        System.out.println("OTP Type: " + otpType);
+        logger.debug("Sending OTP email to: {}, type: {}", email, otpType);
         
         try {
             emailService.sendOtpEmail(email, otpCode, otpType);
-            System.out.println("=== OTP email sent successfully ===");
+            logger.debug("OTP email sent successfully to: {}", email);
         } catch (Exception e) {
-            // Log email error in detail
-            System.err.println("=== CRITICAL: Failed to send OTP email ===");
-            System.err.println("Email: " + email);
-            System.err.println("OTP Code: " + otpCode);
-            System.err.println("Error: " + e.getMessage());
-            System.err.println("Error class: " + e.getClass().getName());
-            if (e.getCause() != null) {
-                System.err.println("Cause: " + e.getCause().getMessage());
-            }
-            e.printStackTrace();
-            // Re-throw to let caller know email failed
-            throw new RuntimeException("Failed to send OTP email to " + email + ": " + e.getMessage(), e);
+            // Log email error
+            logger.error("Failed to send OTP email to: {}, type: {}", email, otpType, e);
+            throw new RuntimeException(AuthConstants.ErrorMessage.OTP_SEND_FAILED, e);
         }
 
         return savedOtp;

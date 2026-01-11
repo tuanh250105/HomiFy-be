@@ -1,5 +1,7 @@
 package com.homifybackend.controller.crm_tour;
 
+import com.homifybackend.auth.security.CustomUserDetails;
+import com.homifybackend.auth.service.UserService;
 import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Tour;
 import com.homifybackend.model.User;
@@ -19,9 +21,19 @@ import java.util.Optional;
 public class TourController {
 
     private final TourService tourService;
-
-    public TourController(TourService tourService) {
+    private final UserService userService;
+    public TourController(TourService tourService, UserService userService) {
         this.tourService = tourService;
+        this.userService = userService;
+    }
+
+    // Helper method: Lấy userId hiện tại từ SecurityContext
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails)) {
+            return null;
+        }
+        return ((CustomUserDetails) auth.getPrincipal()).getUserId();
     }
 
     // 1. Lấy tour theo đúng Agent quản lý (Chuẩn rồi)
@@ -33,9 +45,12 @@ public class TourController {
 
     // 2. Tạo tour mới từ khách hàng || KHÔI
     @PostMapping("/{listingId}/tour-request")
-    public ResponseEntity<Tour> create(@RequestHeader("Authorization") String token, @PathVariable Long listingId, @RequestBody TourDTO tourDTO) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User requester = (User) auth.getPrincipal();
+    public ResponseEntity<?> create(@PathVariable Long listingId, @RequestBody TourDTO tourDTO) {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(401).body("Not authenticated");
+        }
+        User requester = userService.getUserById(userId);
         Tour savedTour = tourService.createTourFromDTO(requester, listingId, tourDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTour);
     }

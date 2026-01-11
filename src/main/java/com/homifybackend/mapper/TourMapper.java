@@ -9,7 +9,7 @@ public class TourMapper {
 
         TourDTOForFE dto = new TourDTOForFE();
 
-        dto.setBuyer(tour.getBuyer() != null ? tour.getBuyer() : "N/A");
+       // dto.setBuyer(tour.getBuyer() != null ? tour.getBuyer() : "N/A");  // CẦN SỬA LẠI
 
         if (tour.getSaleListing() != null && tour.getSaleListing().getProperty() != null) {
             SaleListing sale = tour.getSaleListing();
@@ -30,7 +30,7 @@ public class TourMapper {
         if (dto == null) return null;
 
         Tour tour = new Tour();
-        tour.setBuyer(dto.getBuyer() != null ? dto.getBuyer() : "");
+        //tour.setBuyer(dto.getBuyer() != null ? dto.getBuyer() : "");
         tour.setDate(dto.getDate() != null ? dto.getDate() : "");
         tour.setStatus(dto.getStatus() != null ? dto.getStatus() : "PENDING");
         return tour;

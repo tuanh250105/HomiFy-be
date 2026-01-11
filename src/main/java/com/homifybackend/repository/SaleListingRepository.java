@@ -16,7 +16,6 @@ import com.homifybackend.model.SaleListing;
 @Repository
 public interface SaleListingRepository extends JpaRepository<SaleListing, Long> {
     List<SaleListing> findByAgentUserId(Long agentId);
-    // ✅ Fix: Đổi kiểu tham số từ String sang Enum
     long countByAgent_UserIdAndSaleStatus(Long agentId, SaleListingStatus saleStatus);
 
     List<SaleListing> findByAgent_UserId(Long agentId);

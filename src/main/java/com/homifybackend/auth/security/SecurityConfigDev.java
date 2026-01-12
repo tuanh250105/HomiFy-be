@@ -71,25 +71,35 @@ public class SecurityConfigDev {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        // Allow all origins in dev mode
-        config.setAllowedOriginPatterns(List.of("*"));
-        // Allow all methods including OPTIONS for preflight
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        // Allow all headers
-        config.setAllowedHeaders(List.of("*"));
-        // Don't allow credentials when using wildcard origin pattern
-        config.setAllowCredentials(false);
-        // Allow exposed headers
-        config.setExposedHeaders(List.of("*"));
-        // Cache preflight response for 1 hour
-        config.setMaxAge(3600L);
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+    // origin cụ thể
+    config.setAllowedOriginPatterns(List.of("http://localhost:3000"));
+
+    //cho credentials
+    config.setAllowCredentials(true);
+
+    // Methods
+    config.setAllowedMethods(Arrays.asList(
+        "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+    ));
+
+    // Headers
+    config.setAllowedHeaders(List.of("*"));
+
+    // Expose headers nếu cần đọc token
+    config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
+
+    config.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source =
+        new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+
+    return source;
+}
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

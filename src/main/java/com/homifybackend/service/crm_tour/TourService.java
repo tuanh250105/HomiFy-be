@@ -3,7 +3,8 @@ package com.homifybackend.service.crm_tour;
 import com.homifybackend.dto.TourDTO;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Tour;
-import com.homifybackend.model.SaleListing;
+import com.homifybackend.model.User;
+import com.homifybackend.repository.UserRepository;
 import com.homifybackend.repository.CustomerRepository;
 import com.homifybackend.repository.TourRepository;
 import com.homifybackend.repository.SaleListingRepository;
@@ -17,14 +18,17 @@ import java.util.Optional;
 public class TourService {
     private final TourRepository tourRepository;
     private final CustomerRepository customerRepository;
-    private final SaleListingRepository saleListingRepository; // Thêm repository
+    private final SaleListingRepository saleListingRepository;
+    private final UserRepository userRepository;
 
     public TourService(TourRepository tourRepository,
                        CustomerRepository customerRepository,
-                       SaleListingRepository saleListingRepository) {
+                       SaleListingRepository saleListingRepository,
+                       UserRepository userRepository) {
         this.tourRepository = tourRepository;
         this.customerRepository = customerRepository;
         this.saleListingRepository = saleListingRepository;
+        this.userRepository = userRepository;
     }
 
     // Hàm lấy danh sách Tour theo đúng Agent ID
@@ -37,38 +41,27 @@ public class TourService {
     }
 
     @Transactional
-    public Tour createTourFromDTO(TourDTO dto) {
+    public Tour createTourFromDTO(TourDTO dto, Long userId) {
         Tour tour = new Tour();
-        tour.setBuyer(dto.getBuyerName());
         tour.setStatus("PENDING");
         tour.setRescheduleCount(0);
+        Customer currentCustomer = customerRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Customer profile not found"));
 
-        if (dto.getPreferredTimes() != null && !dto.getPreferredTimes().isEmpty()) {
-            tour.setDate(dto.getPreferredTimes().get(0).getDate());
-            tour.setTime(dto.getPreferredTimes().get(0).getTime());
-        }
-
-        // --- PHẦN GÁN SALE LISTING ĐỂ BIẾT AGENT NÀO QUẢN LÝ ---
+        tour.setRequester(currentCustomer);
+        tour.setBuyer(currentCustomer.getFullName());
         if (dto.getListingId() != null) {
             saleListingRepository.findById(dto.getListingId()).ifPresent(listing -> {
                 tour.setSaleListing(listing);
-                // Gán property string để hiển thị nếu cần
                 if (listing.getProperty() != null) {
                     tour.setProperty(listing.getProperty().getPropertyType());
                 }
             });
         }
-        // -----------------------------------------------------
-
-        customerRepository.findByFullName(dto.getBuyerName()).orElseGet(() -> {
-            Customer newCustomer = new Customer();
-            newCustomer.setFullName(dto.getBuyerName());
-            newCustomer.setPhoneNumber(dto.getBuyerPhone());
-            newCustomer.setPipelineStatus("leads");
-            newCustomer.setInterestScore(0);
-            return customerRepository.save(newCustomer);
-        });
-
+        if (dto.getPreferredTimes() != null && !dto.getPreferredTimes().isEmpty()) {
+            tour.setDate(dto.getPreferredTimes().get(0).getDate());
+            tour.setTime(dto.getPreferredTimes().get(0).getTime());
+        }
         return tourRepository.save(tour);
     }
 
@@ -109,7 +102,6 @@ public class TourService {
                 if (isRescheduling) {
                     scoreChange -= 10;
                 }
-
                 if (scoreChange != 0) {
                     int finalScore = Math.max(0, Math.min(100, currentScore + scoreChange));
                     customer.setInterestScore(finalScore);

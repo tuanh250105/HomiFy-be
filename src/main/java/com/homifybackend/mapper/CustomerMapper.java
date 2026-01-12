@@ -17,10 +17,17 @@ public class CustomerMapper {
         dto.setId(c.getUserId());
         dto.setFullName(c.getFullName());
         dto.setPhoneNumber(c.getPhoneNumber());
+
+        if (c.getAccount() != null) {
+            dto.setEmail(c.getAccount().getEmail());
+        }
+
         dto.setPipelineStatus(c.getPipelineStatus());
         dto.setInterestScore(c.getInterestScore());
         dto.setIsFavorite(c.getIsFavorite());
         dto.setDemand(c.getDemand());
+
+        // Chuyển đổi danh sách nhà đã xem
         if (c.getViewedHouses() != null) {
             dto.setViewedHouses(
                     c.getViewedHouses()
@@ -40,10 +47,27 @@ public class CustomerMapper {
 
         dto.setId(p.getPropertyId());
         dto.setArea(p.getArea());
+        dto.setBeds(p.getBeds());
+        dto.setBaths(p.getBaths());
+        dto.setFloors(p.getFloors());
+        dto.setDescription(p.getDescription());
+        dto.setYearBuilt(p.getYearBuilt());
+        dto.setPropertyType(p.getPropertyType());
 
+        // Xử lý địa chỉ
         if (p.getAddress() != null) {
-            dto.setCity(p.getAddress().getCity());
-            dto.setStreet(p.getAddress().getStreet());
+            String street = p.getAddress().getStreet() != null ? p.getAddress().getStreet() : "";
+            String city = p.getAddress().getCity() != null ? p.getAddress().getCity() : "";
+            dto.setStreet(street);
+            dto.setCity(city);
+
+            if (!street.isEmpty() && !city.isEmpty()) {
+                dto.setAddress(street + ", " + city);
+            } else {
+                dto.setAddress(street + city);
+            }
+        } else {
+            dto.setAddress("No address");
         }
 
         if (p.getSaleListing() != null && p.getSaleListing().getCurrentPrice() != null) {

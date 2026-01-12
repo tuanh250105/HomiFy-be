@@ -9,19 +9,23 @@ public class TourMapper {
 
         TourDTOForFE dto = new TourDTOForFE();
 
-        dto.setBuyer(tour.getBuyer() != null ? tour.getBuyer() : "N/A");
-
-        if (tour.getSaleListing() != null && tour.getSaleListing().getProperty() != null) {
-            SaleListing sale = tour.getSaleListing();
-            dto.setProperty(sale.getProperty().getPropertyType() != null
-                    ? sale.getProperty().getPropertyType()
-                    : "N/A");
+        // 1. Ưu tiên lấy tên từ đối tượng User (Requester) đã đăng nhập
+        if (tour.getRequester() != null) {
+            dto.setBuyer(tour.getRequester().getFullName());
         } else {
-            dto.setProperty("N/A");
+            dto.setBuyer(tour.getBuyer() != null ? tour.getBuyer() : "N/A");
+        }
+
+        // 2. Lấy loại bất động sản (Property Type)
+        if (tour.getSaleListing() != null && tour.getSaleListing().getProperty() != null) {
+            String type = tour.getSaleListing().getProperty().getPropertyType();
+            dto.setProperty(type != null ? type : "House"); // Dùng 'House' làm mặc định như bạn muốn
+        } else {
+            dto.setProperty(tour.getProperty() != null ? tour.getProperty() : "House");
         }
 
         dto.setDate(tour.getDate() != null ? tour.getDate() : "N/A");
-        dto.setStatus(tour.getStatus() != null ? tour.getStatus() : "N/A");
+        dto.setStatus(tour.getStatus() != null ? tour.getStatus() : "PENDING");
 
         return dto;
     }

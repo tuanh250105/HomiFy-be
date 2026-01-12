@@ -24,6 +24,9 @@ public class Customer extends User {
     @Transient
     private List<Property> viewedHouses;
 
+    @Transient
+    private String email;
+
     public Customer() {}
     public List<Property> getViewedHouses() {
         return viewedHouses;
@@ -42,4 +45,12 @@ public class Customer extends User {
     public String getStatus() { return this.pipelineStatus; }
     public String getName() { return getFullName(); }
     public String getPhone() { return getPhoneNumber(); }
+
+    public String getEmail() {
+        if (this.email == null && this.getAccount() != null) {
+            return this.getAccount().getEmail();
+        }
+        return this.email;
+    }
+    public void setEmail(String email) { this.email = email; }
 }

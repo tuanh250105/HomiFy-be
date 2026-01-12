@@ -31,10 +31,7 @@ public class CustomerController {
 
     @GetMapping("/{id}/suggestions")
     public List<AgentPropertyDTO> getSuggestions(@PathVariable Long id) {
-        return service.getSuggestedProperties(id)
-                .stream()
-                .map(CustomerMapper::toPropertyDTO)
-                .toList();
+        return service.getSuggestedProperties(id);
     }
 
     @PutMapping("/{id}")

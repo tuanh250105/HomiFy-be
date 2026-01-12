@@ -21,21 +21,20 @@ public class TourController {
         this.tourService = tourService;
     }
 
-    // 1. Lấy tour theo đúng Agent quản lý (Chuẩn rồi)
+    // Lấy tour theo đúng Agent quản lý
     @GetMapping("/agent/{agentId}")
     public ResponseEntity<List<Tour>> getToursByAgent(@PathVariable Long agentId) {
         List<Tour> tours = tourService.findToursByAgent(agentId);
         return ResponseEntity.ok(tours);
     }
 
-    // 2. Tạo tour mới từ khách hàng
     @PostMapping
-    public ResponseEntity<Tour> create(@RequestBody TourDTO tourDTO) {
-        Tour savedTour = tourService.createTourFromDTO(tourDTO);
+    public ResponseEntity<Tour> create(@RequestBody TourDTO tourDTO, @RequestParam Long userId) {
+        Tour savedTour = tourService.createTourFromDTO(tourDTO, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTour);
     }
 
-    // 3. Cập nhật trạng thái (Duyệt/Từ chối/Đổi lịch)
+    // Cập nhật trạng thái (Duyệt/Từ chối/Đổi lịch)
     @PutMapping("/{id}")
     public ResponseEntity<Tour> update(@PathVariable Long id, @RequestBody Tour data) {
         Optional<Tour> updatedTour = tourService.updateTourStatus(id, data);

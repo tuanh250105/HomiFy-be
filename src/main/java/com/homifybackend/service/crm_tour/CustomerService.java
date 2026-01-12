@@ -1,5 +1,7 @@
 package com.homifybackend.service.crm_tour;
 
+import com.homifybackend.dto.AgentPropertyDTO;
+import com.homifybackend.mapper.CustomerMapper;
 import com.homifybackend.model.Customer;
 import com.homifybackend.model.Property;
 import com.homifybackend.model.TourRequestStatus;
@@ -30,6 +32,7 @@ public class CustomerService {
         this.tourRepository = tourRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Customer> getAllCustomers() {
         List<Customer> customers = repo.findAll();
         for (Customer c : customers) {
@@ -46,18 +49,30 @@ public class CustomerService {
 
     @Transactional
     public Customer updateCustomer(Long id, Customer details) {
-        Customer customer = repo.findById(id).orElseThrow();
+        Customer customer = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
+
         if (details.getFullName() != null) customer.setFullName(details.getFullName());
         if (details.getPhoneNumber() != null) customer.setPhoneNumber(details.getPhoneNumber());
-        customer.setDemand(details.getDemand());
+        if (details.getDemand() != null) customer.setDemand(details.getDemand());
+        if (details.getEmail() != null && customer.getAccount() != null) {
+            customer.getAccount().setEmail(details.getEmail());
+        }
+
         return repo.save(customer);
     }
 
     @Transactional
     public Customer updateStatus(Long id, Map<String, String> statusUpdate) {
-        Customer customer = repo.findById(id).orElseThrow();
+        Customer customer = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
         String newStatus = statusUpdate.get("pipelineStatus");
-        if (newStatus != null) customer.setPipelineStatus(newStatus);
+        if (newStatus != null) {
+            customer.setPipelineStatus(newStatus);
+            if ("success".equalsIgnoreCase(newStatus)) {
+                customer.setInterestScore(100);
+            }
+        }
         return repo.save(customer);
     }
 
@@ -78,8 +93,10 @@ public class CustomerService {
         return repo.save(customer);
     }
 
-    public List<Property> getSuggestedProperties(Long customerId) {
-        Customer customer = repo.findById(customerId).orElseThrow();
+    @Transactional(readOnly = true)
+    public List<AgentPropertyDTO> getSuggestedProperties(Long customerId) {
+        Customer customer = repo.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
         String demand = customer.getDemand() != null ? customer.getDemand().toLowerCase() : "";
 
         double targetArea = 0;
@@ -88,29 +105,49 @@ public class CustomerService {
             if (matcher.find()) {
                 targetArea = Double.parseDouble(matcher.group(1));
             }
-        } catch (Exception e) { }
+        } catch (Exception e) {
 
+        }
         final double finalTargetArea = targetArea;
 
+        // 3. Duyệt danh sách nhà và tính điểm Match Score
         return propertyRepository.findAll().stream()
-                .filter(p -> {
-                    if (demand.isEmpty()) return false;
+                .map(p -> {
+                    if (demand.isEmpty()) return null;
+
+                    int score = 0;
                     String city = (p.getAddress() != null && p.getAddress().getCity() != null)
                             ? p.getAddress().getCity().toLowerCase() : "";
                     String street = (p.getAddress() != null && p.getAddress().getStreet() != null)
                             ? p.getAddress().getStreet().toLowerCase() : "";
+                    String type = p.getPropertyType() != null ? p.getPropertyType().toLowerCase() : "";
                     String desc = p.getDescription() != null ? p.getDescription().toLowerCase() : "";
 
-                    boolean locationMatch = demand.contains(city) || city.contains(demand) ||
-                            demand.contains(street) || desc.contains(demand);
 
-                    boolean areaMatch = true;
+                    // Vị trí (Thành phố/Tên đường) - Tối đa 50%
+                    if (!city.isEmpty() && demand.contains(city)) score += 30;
+                    if (!street.isEmpty() && demand.contains(street)) score += 20;
+
+                    // Loại nhà hoặc mô tả - Tối đa 30%
+                    if (!type.isEmpty() && demand.contains(type)) score += 20;
+                    if (desc.contains(demand) || demand.contains(desc)) score += 10;
+
+                    // Diện tích (Sai số trong khoảng 30%) - Tối đa 20%
                     if (finalTargetArea > 0) {
                         double pArea = p.getArea();
-                        areaMatch = pArea >= (finalTargetArea * 0.7) && pArea <= (finalTargetArea * 1.3);
+                        if (pArea >= (finalTargetArea * 0.7) && pArea <= (finalTargetArea * 1.3)) {
+                            score += 20;
+                        }
                     }
-                    return locationMatch && areaMatch;
+
+                    if (score == 0) return null;
+
+                    AgentPropertyDTO dto = CustomerMapper.toPropertyDTO(p);
+                    dto.setMatchScore(score);
+                    return dto;
                 })
+                .filter(Objects::nonNull)
+                .sorted((a, b) -> b.getMatchScore().compareTo(a.getMatchScore())) // Sắp xếp căn khớp nhất lên đầu
                 .limit(10)
                 .collect(Collectors.toList());
     }

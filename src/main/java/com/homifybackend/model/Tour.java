@@ -1,5 +1,6 @@
 package com.homifybackend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -24,11 +25,13 @@ public class Tour {
 
     @ManyToOne
     @JoinColumn(name = "requester_id")
+    @JsonIgnoreProperties({"account", "address", "registrationDate"})
     private User requester;
 
     // MÌNH THÊM TRƯỜNG NÀY ĐỂ QUERY ĐƯỢC THEO AGENT
     @ManyToOne
     @JoinColumn(name = "sale_listing_id")
+    @JsonIgnoreProperties({"tours", "agent", "property"})
     private SaleListing saleListing;
 
     public Tour() {}
